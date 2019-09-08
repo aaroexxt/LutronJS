@@ -166,7 +166,7 @@ class telnetM {
 		return new Promise((resolve, reject) => {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
-				if (devicessIndices[i] == name) { //indices are names
+				if (devicesIndices[i] == name) { //indices are names
 					this.devices[devicesIndices[i]].power = newPower;
 					return resolve(this.devices[devicesIndices[i]]);
 				}
@@ -178,24 +178,22 @@ class telnetM {
 	setLocationLight(name = "", value = 100) {
 		return new Promise((resolve, reject) => {
 			this.lookupLocation(name).then(locationObject => {
-				console.log(locationObject);
-				console.log("LookupLocation success");
-				
+
 				var locationDevices = [];
-				for (var i=0; i<locationObject.devices.length; i++) {
-					this.lookupDevice(locationObject.devices[i], value).then(device => {
-						console.log(device);
-						console.log("LookupDevice "+i+" success");
-						locationDevices.push(device); //add device to list
+				for (var j=0; j<locationObject.devices.length; j++) {
+					this.lookupDevice(locationObject.devices[j], value).then(device => {
+						//locationDevices.push(device); //add device to list
+						this.setLightOutput(device.identifier, value, device.rampUpTime); //TODO RampUpTime vs RampDownTime
 					}).catch(e => {
 						return reject(e); //send reject up chain
 					})
 				}
 
-				for (var i=0; i<locationDevices.length; i++) {
-					console.log(locationDevices[i].identifier, value, locationDevices[i].rampUpTime);
-					this.setLightOutput(locationDevices[i].identifier, value, locationDevices[i].rampUpTime); //TODO RampUpTime vs RampDownTime
-				}
+				/*for (var j=0; j<locationDevices.length; j++) {
+					console.log(j);
+					console.log(locationDevices[i].identifier, value, locationDevices[j].rampUpTime);
+					this.setLightOutput(locationDevices[i].identifier, value, locationDevices[j].rampUpTime); //TODO RampUpTime vs RampDownTime
+				}*/
 				return resolve();
 			}).catch(e => {
 				return reject(e);
