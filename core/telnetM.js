@@ -81,15 +81,28 @@ class telnetM {
 		this.dataBuffer.push(data);
 	}
 
-	sendCommand(command = "#OUTPUT", device = 1, action = 1, parameter = "") {
-		let sendCommand = command+","+device+","+action+((typeof parameter != "undefined") ? ","+parameter : ""); //selectively send based on whether there's a parameter
+	sendCommand(command = "#OUTPUT", device = 1, action = 1, parameters = undefined) {
+		let sendCommand = command+","+device+","+action; //selectively send based on whether there's a parameter
+		switch (typeof parameters) { //put in switch to determine what to do with parameters
+			case "object":
+				for (let i=0; i<parameters.length; i++) {
+					sendCommand+=",";
+					sendCommand+=parameters[i];
+				}
+				break;
+			case "string":
+			case "number":
+				sendCommand+=",";
+				sendCommand+=parameters;
+				break;
+		}
 		telnetLog("Sending command: "+sendCommand)
 		this.telnetClient.write(sendCommand+EOL); //Make sure to send EOL so server understands
 	}
 
-	setLightOutput(device = 2, value = 100) {
+	setLightOutput(device = 2, value = 100, rampTime = "00:05") {
 		return new Promise((resolve, reject) => {
-			this.sendCommand("#OUTPUT",device,1,value);
+			this.sendCommand("#OUTPUT",device,1,[value,rampTime]);
 			this.waitUntilRecv().then(response => {
 				return resolve();
 			}).catch( e => {
@@ -134,6 +147,59 @@ class telnetM {
 				}
 				oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
 			},50);
+		})
+	}
+
+	lookupLocation(name = "") {
+		return new Promise((resolve, reject) => {
+			let locationsIndices = Object.keys(this.locations);
+			for (let i=0; i<locationsIndices.length; i++) {
+				if (locationsIndices[i] == name) { //indices are names
+					return resolve(this.locations[locationsIndices[i]]);
+				}
+			}
+			return reject("Location lookup failed: not found");
+		})
+	}
+
+	lookupDevice(name = "", newPower = 100) { //set power on lookup
+		return new Promise((resolve, reject) => {
+			let devicesIndices = Object.keys(this.devices);
+			for (let i=0; i<devicesIndices.length; i++) {
+				if (devicessIndices[i] == name) { //indices are names
+					this.devices[devicesIndices[i]].power = newPower;
+					return resolve(this.devices[devicesIndices[i]]);
+				}
+			}
+			return reject("Device lookup failed: not found");
+		})
+	}
+
+	setLocationLight(name = "", value = 100) {
+		return new Promise((resolve, reject) => {
+			this.lookupLocation(name).then(locationObject => {
+				console.log(locationObject);
+				console.log("LookupLocation success");
+				
+				var locationDevices = [];
+				for (var i=0; i<locationObject.devices.length; i++) {
+					this.lookupDevice(locationObject.devices[i], value).then(device => {
+						console.log(device);
+						console.log("LookupDevice "+i+" success");
+						locationDevices.push(device); //add device to list
+					}).catch(e => {
+						return reject(e); //send reject up chain
+					})
+				}
+
+				for (var i=0; i<locationDevices.length; i++) {
+					console.log(locationDevices[i].identifier, value, locationDevices[i].rampUpTime);
+					this.setLightOutput(locationDevices[i].identifier, value, locationDevices[i].rampUpTime); //TODO RampUpTime vs RampDownTime
+				}
+				return resolve();
+			}).catch(e => {
+				return reject(e);
+			})
 		})
 	}
 }
