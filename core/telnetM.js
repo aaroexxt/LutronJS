@@ -82,44 +82,58 @@ class telnetM {
 	}
 
 	sendCommand(command = "#OUTPUT", device = 1, action = 1, parameter = "") {
-		let sendCommand = command+","+device+","+action+((typeof parameter != "undefined") ? ","+parameter : "");
+		let sendCommand = command+","+device+","+action+((typeof parameter != "undefined") ? ","+parameter : ""); //selectively send based on whether there's a parameter
 		telnetLog("Sending command: "+sendCommand)
-		this.telnetClient.write(sendCommand); //selectively send based on whether there's a parameter
+		this.telnetClient.write(sendCommand+EOL); //Make sure to send EOL so server understands
 	}
 
 	setLightOutput(device = 2, value = 100) {
-		this.sendCommand("#OUTPUT",device,1,value);
+		return new Promise((resolve, reject) => {
+			this.sendCommand("#OUTPUT",device,1,value);
+			this.waitUntilRecv().then(response => {
+				return resolve();
+			}).catch( e => {
+				return reject(e);
+			})
+		});
 	}
 
 	getLightOutput(device = 1) {
 		return new Promise((resolve, reject) => {
 			this.sendCommand("?OUTPUT",device,1);
 			this.waitUntilRecv().then(response => {
-				return resolve(response);
-			}, rj => {
+				for (let i=0; i<response.length; i++) {
+					if (response[i].indexOf("~OUTPUT,"+device) > -1) {
+						return resolve(response[i].toString().split(",")[3]);
+					}
+				}
+				return reject("Couldn't get value of device; didn't show up in data (data="+response+")");
+			}).catch(rj => {
 				return reject(rj); //pass error up chain
-			})
+			});
 		})
 	}
 
 	waitUntilRecv(timeout = 10000) {
 		return new Promise((resolve, reject) => {
-			var oldBuffer = [];
+			var oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
 			var recvTimeout = setTimeout(() => {
 				clearInterval(dataInterval);
 				return reject("DataBuffer timeout: no events");
 			},timeout);
 			var dataInterval = setInterval(() => {
-				if (this.dataBuffer != oldBuffer) {
+				if (this.dataBuffer.length != oldBuffer.length) {
 					let currentDB = this.dataBuffer;
 					this.dataBuffer = []; //clear DataBuffer
 
 					clearInterval(dataInterval); //clear timeouts & intervals
 					clearTimeout(recvTimeout);
 					return resolve(currentDB); //resolve function
+				} else {
+					console.log(this.dataBuffer.length,oldBuffer.length);
 				}
-				oldBuffer = this.dataBuffer;
-			});
+				oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
+			},50);
 		})
 	}
 }

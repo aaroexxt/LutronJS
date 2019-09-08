@@ -60,7 +60,13 @@ var roomData = JSON.parse(rdContents);
 var hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings.baseHubPass, roomData);
 hub.begin().then(() => {
 	console.log("Hub connected");
-	hub.setLightOutput(2,0);
+	hub.setLightOutput(2,100).then(() => {
+		hub.getLightOutput(2).then(value => {
+			console.log("Light output value: "+value);
+		}).catch(e => {
+			console.error("Light output value fail: "+e);
+		})
+	});
 }).catch(e => {
 	console.error("Hub connection failure: "+e);
 	process.exit(1);
