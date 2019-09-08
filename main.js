@@ -141,12 +141,9 @@ app.post("/device/:device/:newValue", function(req, res) {
 	let device = req.params.device;
 	let newValue = req.params.newValue;
 	hub.lookupDeviceIdentifier(device, newValue).then(deviceObject => {
-		console.log("Device lookup OK");
 		hub.getLightOutput(deviceObject.identifier).then(currentValue => {
-			console.log("Device currentValue: "+currentValue);
 			let ramp = (newValue >= currentValue) ? deviceObject.rampUpTime : deviceObject.rampDownTime;
 			hub.setLightOutput(deviceObject.identifier, newValue, ramp).then(() => {
-				console.log("Device SUCC");
 				return res.end(RequestHandler.SUCCESS());
 			}).catch(e => {
 				return res.end(RequestHandler.FAILURE("Error setting light value: "+e+"\n"));
@@ -168,12 +165,41 @@ app.post("/location/:location/:newValue", function(req, res) {
 	})
 })
 
+var deviceHTML = "";
+let deviceKeys = Object.keys(roomData.devices);
+for (let i=0; i<deviceKeys.length; i++) {
+	deviceHTML+=`<p>Device: ${deviceKeys[i]}</p>`;
+	deviceHTML+="<br>";
+	deviceHTML+=`<input id="${deviceKeys[i]}Slider" type="range" min="0" max="100" value="100" oninput="document.getElementById('${deviceKeys[i]}Value').innerHTML = 'Value: '+this.value;"></input>`
+	deviceHTML+="<br>";
+	deviceHTML+=`<p id="${deviceKeys[i]}Value">Value: 100</p>`
+	deviceHTML+=`<button onclick="sendDeviceNameCommand('${deviceKeys[i]}',document.getElementById('${deviceKeys[i]}Slider').value);">Set Device Value</button>`;
+	deviceHTML+=`<br>`;
+}
+
+var locationHTML = "";
+let locationKeys = Object.keys(roomData.locations);
+for (let i=0; i<locationKeys.length; i++) {
+	locationHTML+=`<p>Location: ${locationKeys[i]}</p>`;
+	locationHTML+="<br>";
+	locationHTML+=`<input id="${locationKeys[i]}Slider" type="range" min="0" max="100" value="100" oninput="document.getElementById('${locationKeys[i]}Value').innerHTML = 'Value: '+this.value;"></input>`
+	locationHTML+="<br>";
+	locationHTML+=`<p id="${locationKeys[i]}Value">Value: 100</p>`
+	locationHTML+=`<button onclick="sendLocationCommand('${locationKeys[i]}',document.getElementById('${locationKeys[i]}Slider').value);">Set Location Value</button>`;
+	locationHTML+=`<br>`;
+}
+
 app.use(function(req, res, next){ //404 page
 	res.send(`
 		<h1>Aaron's Light Manager</h1>
 		<br><br>
 		<h3>Devices:</h3>
 		<br>
+		${deviceHTML}
+		<br>
+		<h3>Locations:</h3>
+		${locationHTML}
+		<h3>
 		<script>
 		function sendDeviceNameCommand(deviceName, value) { 
 	    	let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
@@ -181,7 +207,7 @@ app.use(function(req, res, next){ //404 page
 		    }).then(res => res.json()).then(res => {
 		    	console.log(JSON.stringify(res));
 		    }).catch(e => {
-		    	console.error(e);
+		    	console.error(JSON.stringify(e));
 		    });
 		}
 		function sendDeviceCommand(device, value) {
@@ -190,7 +216,16 @@ app.use(function(req, res, next){ //404 page
 		    }).then(res => res.json()).then(res => {
 		    	console.log(JSON.stringify(res));
 		    }).catch(e => {
-		    	console.error(e);
+		    	console.error(JSON.stringify(e));
+		    });
+		}
+		function sendLocationCommand(loc, value) {
+	    	let response = fetch("http://"+document.location.host+"/location/"+loc+"/"+value, {
+				method: 'post'
+		    }).then(res => res.json()).then(res => {
+		    	console.log(JSON.stringify(res));
+		    }).catch(e => {
+		    	console.error(JSON.stringify(e));
 		    });
 		}
 		</script>

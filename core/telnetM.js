@@ -77,8 +77,10 @@ class telnetM {
 	}
 
 	recv(data) {
-		console.log("Recieved data: "+data);
-		this.dataBuffer.push(data);
+		// console.log("Recieved data: "+data);
+		if (data.toString().indexOf("GNET>" == -1)) { //only push data with useful info
+			this.dataBuffer.push(data.toString());
+		}
 	}
 
 	sendCommand(command = "#OUTPUT", device = 1, action = 1, parameters = undefined) {
@@ -114,16 +116,26 @@ class telnetM {
 	getLightOutput(device = 1) {
 		return new Promise((resolve, reject) => {
 			this.sendCommand("?OUTPUT",device,1);
-			this.waitUntilRecv().then(response => {
-				for (let i=0; i<response.length; i++) {
-					if (response[i].indexOf("~OUTPUT,"+device) > -1) {
-						return resolve(response[i].toString().split(",")[3]);
+			let tries = 10;
+			var waitForData = () => {
+				this.waitUntilRecv().then(response => {
+					for (let i=0; i<response.length; i++) {
+						if (response[i].indexOf("~OUTPUT,"+device) > -1) {
+							return resolve(response[i].toString().split(",")[3]);
+						}
 					}
-				}
-				return reject("Couldn't get value of device; didn't show up in data (data="+response+")");
-			}).catch(rj => {
-				return reject(rj); //pass error up chain
-			});
+					// console.log("TRY: "+tries);
+					if (tries > 0) {
+						tries--;
+						waitForData();
+					} else {
+						return reject("Couldn't get value of device; didn't show up in data (data="+response+")");
+					}
+				}).catch(rj => {
+					return reject(rj); //pass error up chain
+				});
+			}
+			waitForData();
 		})
 	}
 
@@ -142,19 +154,18 @@ class telnetM {
 					clearInterval(dataInterval); //clear timeouts & intervals
 					clearTimeout(recvTimeout);
 					return resolve(currentDB); //resolve function
-				} else {
-					console.log(this.dataBuffer.length,oldBuffer.length);
 				}
 				oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
-			},50);
+			});
 		})
 	}
 
 	lookupLocation(name = "") {
+		name = name.toLowerCase(); //case insensitive
 		return new Promise((resolve, reject) => {
 			let locationsIndices = Object.keys(this.locations);
 			for (let i=0; i<locationsIndices.length; i++) {
-				if (locationsIndices[i] == name) { //indices are names
+				if (locationsIndices[i].toLowerCase() == name) { //indices are names
 					return resolve(this.locations[locationsIndices[i]]);
 				}
 			}
@@ -177,7 +188,6 @@ class telnetM {
 	}
 
 	lookupDeviceIdentifier(identifier = 0, newPower = 100) {
-		console.log(this.devices);
 		return new Promise((resolve, reject) => {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
@@ -196,9 +206,10 @@ class telnetM {
 			this.lookupLocation(name).then(locationObject => {
 				var setLight = index => {
 					this.lookupDeviceName(locationObject.devices[index], value).then(device => {
+						// console.log("dN: "+device.identifier);
 						this.getLightOutput(device.identifier).then(currentValue => {
 							let ramp = (value >= currentValue) ? device.rampUpTime : device.rampDownTime;
-							console.log("RampNValue: "+value+" RampOValue: "+currentValue+" Ramp: "+ramp);
+							// console.log("RampNValue: "+value+" RampOValue: "+currentValue+" Ramp: "+ramp);
 							this.setLightOutput(device.identifier, value, ramp).then(() => {
 								if (index < locationObject.devices.length-1) { //need to keep iterating
 									setLight(index+1);
