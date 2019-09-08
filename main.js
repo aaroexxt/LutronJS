@@ -32,7 +32,8 @@ const settings = {
 	assetsDirectory: "assets",
 	baseHubIP: "192.168.1.33",
 	baseHubUser: "lutron",
-	baseHubPass: "integration"
+	baseHubPass: "integration",
+	roomDataPath: "roomData.json"
 }
 
 //Basic Dependencies
@@ -47,12 +48,26 @@ const cors = require('cors');
 
 //Additional core utilities
 const {RequestHandler, Util} = require("./core/serverUtilities.js");
-const telnetMain = require("./core/telnetM.js");
+const telnetHandler = require("./core/telnetM.js");
 console.log("Required all packages successfully");
 
 /* Initialization */
-var telnetM = new telnetMain(settings.baseHubIP, settings.baseHubUser, settings.baseHubPass);
-const cwd = __dirname; //setup pointer to current working directory
+//JSON file parsing
+const rdContents = fs.readFileSync(settings.roomDataPath, 'utf8')
+var roomData = JSON.parse(rdContents);
+
+//Hub connection via telnet server
+var hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings.baseHubPass, roomData);
+hub.begin().then(() => {
+	console.log("Hub connected");
+	hub.setLightOutput(2,0);
+}).catch(e => {
+	console.error("Hub connection failure: "+e);
+	process.exit(1);
+});
+
+//setup pointer to current working directory
+const cwd = __dirname;
 
 console.log('Initialized all modules successfully');
 

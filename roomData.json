@@ -1,0 +1,23 @@
+{
+	"devices": [
+		{
+			"identifier": 1,
+			"name": "AaronR",
+			"power": 100,
+			"rampUpTime": "00:05",
+			"rampDownTime": "00:05"
+		},
+		{
+			"identifier": 2,
+			"name": "AaronL",
+			"power": 100,
+			"rampUpTime": "00:05",
+			"rampDownTime": "00:05"
+		}
+	],
+	"locations": {
+		"AaronsRoom": {
+			"devices": [1, 2]
+		}
+	}
+}
