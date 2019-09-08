@@ -162,39 +162,60 @@ class telnetM {
 		})
 	}
 
-	lookupDevice(name = "", newPower = 100) { //set power on lookup
+	lookupDeviceName(name = "", newPower = 100) { //set power on lookup
+		name = name.toLowerCase();
 		return new Promise((resolve, reject) => {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
-				if (devicesIndices[i] == name) { //indices are names
+				if (devicesIndices[i].toLowerCase() == name) { //indices are names
 					this.devices[devicesIndices[i]].power = newPower;
 					return resolve(this.devices[devicesIndices[i]]);
 				}
 			}
-			return reject("Device lookup failed: not found");
+			return reject("Device lookup failed: name not found");
+		})
+	}
+
+	lookupDeviceIdentifier(identifier = 0, newPower = 100) {
+		console.log(this.devices);
+		return new Promise((resolve, reject) => {
+			let devicesIndices = Object.keys(this.devices);
+			for (let i=0; i<devicesIndices.length; i++) {
+				if (this.devices[devicesIndices[i]].identifier == identifier) { //indices are names
+					this.devices[devicesIndices[i]].power = newPower;
+					return resolve(this.devices[devicesIndices[i]]);
+				}
+			}
+			return reject("Device lookup failed: identifier not found");
 		})
 	}
 
 	setLocationLight(name = "", value = 100) {
+		name = name.toLowerCase();
 		return new Promise((resolve, reject) => {
 			this.lookupLocation(name).then(locationObject => {
-
-				var locationDevices = [];
-				for (var j=0; j<locationObject.devices.length; j++) {
-					this.lookupDevice(locationObject.devices[j], value).then(device => {
-						//locationDevices.push(device); //add device to list
-						this.setLightOutput(device.identifier, value, device.rampUpTime); //TODO RampUpTime vs RampDownTime
+				var setLight = index => {
+					this.lookupDeviceName(locationObject.devices[index], value).then(device => {
+						this.getLightOutput(device.identifier).then(currentValue => {
+							let ramp = (value >= currentValue) ? device.rampUpTime : device.rampDownTime;
+							console.log("RampNValue: "+value+" RampOValue: "+currentValue+" Ramp: "+ramp);
+							this.setLightOutput(device.identifier, value, ramp).then(() => {
+								if (index < locationObject.devices.length-1) { //need to keep iterating
+									setLight(index+1);
+								} else {
+									return resolve(); //now we're done
+								}
+							}).catch(e => {
+								return reject(e);
+							});
+						}).catch( e => {
+							return reject(e);
+						})
 					}).catch(e => {
 						return reject(e); //send reject up chain
 					})
-				}
-
-				/*for (var j=0; j<locationDevices.length; j++) {
-					console.log(j);
-					console.log(locationDevices[i].identifier, value, locationDevices[j].rampUpTime);
-					this.setLightOutput(locationDevices[i].identifier, value, locationDevices[j].rampUpTime); //TODO RampUpTime vs RampDownTime
-				}*/
-				return resolve();
+				};
+				setLight(0); //start recursive function
 			}).catch(e => {
 				return reject(e);
 			})

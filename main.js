@@ -58,20 +58,36 @@ var roomData = JSON.parse(rdContents);
 
 //Hub connection via telnet server
 var hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings.baseHubPass, roomData);
+var hubConnected = false;
 hub.begin().then(() => {
+	hubConnected = true;
 	console.log("Hub connected");
-	hub.setLocationLight("AaronsRoom",0).then(() => {
+	/**** EXAMPLE USAGE
+
+	Single light (by device identifier):
+
+	SET VALUE
+	hub.setLightOutput(2,0).then(() => {
+		console.log("Success");
+	}).catch(e => {
+		console.error("Light output value fail: "+e);
+	});
+
+	GET VALUE
+	hub.getLightOutput(2).then(value => {
+			console.log("Light output value: "+value);
+	}).catch(e => {
+		console.error("Light output value fail: "+e);
+	});
+
+	Location (room, by room name):
+
+	hub.setLocationLight("AaronsRoom",100).then(() => {
 		console.log("AaronsRoom success");
 	}).catch(e => {
 		console.error(e);
 	})
-	/*hub.setLightOutput(2,0).then(() => {
-		hub.getLightOutput(2).then(value => {
-			console.log("Light output value: "+value);
-		}).catch(e => {
-			console.error("Light output value fail: "+e);
-		})
-	});*/
+	*/
 }).catch(e => {
 	console.error("Hub connection failure: "+e);
 	process.exit(1);
@@ -98,18 +114,87 @@ app.use(bodyParser.json());
 
 console.log("Initializing express routing");
 //Initialize express routing
-var APIrouter = express.Router();
-
 app.get('/status', (req, res) => {
-    console.log("GET /status");
-})
+    return res.end(RequestHandler.SUCCESS(hubConnected));
+});
 
 console.log("Connecting routers to pages");
-app.use('/api', APIrouter); //connect api to main
+app.post("/deviceName/:device/:newValue", function(req, res) {
+	let deviceName = req.params.device;
+	let newValue = req.params.newValue;
+	hub.lookupDeviceName(deviceName, newValue).then(deviceObject => {
+		hub.getLightOutput(deviceObject.identifier).then(currentValue => {
+			let ramp = (newValue >= currentValue) ? deviceObject.rampUpTime : deviceObject.rampDownTime;
+			hub.setLightOutput(deviceObject.identifier, newValue, ramp).then(() => {
+				return res.end(RequestHandler.SUCCESS());
+			}).catch(e => {
+				return res.end(RequestHandler.FAILURE("Error setting light value: "+e+"\n"));
+			})
+		}).catch(e => {
+			return res.end(RequestHandler.FAILURE("Error getting light output value: "+e+"\n"));
+		})
+	}).catch(e => {
+		return res.end(RequestHandler.FAILURE("Device lookup failed: "+e+"\n"));
+	});
+});
+app.post("/device/:device/:newValue", function(req, res) {
+	let device = req.params.device;
+	let newValue = req.params.newValue;
+	hub.lookupDeviceIdentifier(device, newValue).then(deviceObject => {
+		console.log("Device lookup OK");
+		hub.getLightOutput(deviceObject.identifier).then(currentValue => {
+			console.log("Device currentValue: "+currentValue);
+			let ramp = (newValue >= currentValue) ? deviceObject.rampUpTime : deviceObject.rampDownTime;
+			hub.setLightOutput(deviceObject.identifier, newValue, ramp).then(() => {
+				console.log("Device SUCC");
+				return res.end(RequestHandler.SUCCESS());
+			}).catch(e => {
+				return res.end(RequestHandler.FAILURE("Error setting light value: "+e+"\n"));
+			})
+		}).catch(e => {
+			return res.end(RequestHandler.FAILURE("Error getting light output value: "+e+"\n"));
+		})
+	}).catch(e => {
+		return res.end(RequestHandler.FAILURE("Device lookup failed: "+e+"\n"));
+	});
+});
+app.post("/location/:location/:newValue", function(req, res) {
+	let locName = req.params.location;
+	let newValue = req.params.newValue;
+	hub.setLocationLight(locName,newValue).then(() => {
+		return res.end(RequestHandler.SUCCESS());
+	}).catch(e => {
+		return res.end(RequestHandler.FAILURE("Error setting room value: "+e+"\n"));
+	})
+})
 
 app.use(function(req, res, next){ //404 page
-	res.status(404);
-	res.send("<h1>You tried to go to a page that doesn't exist :(</h1>");
+	res.send(`
+		<h1>Aaron's Light Manager</h1>
+		<br><br>
+		<h3>Devices:</h3>
+		<br>
+		<script>
+		function sendDeviceNameCommand(deviceName, value) { 
+	    	let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
+				method: 'post'
+		    }).then(res => res.json()).then(res => {
+		    	console.log(JSON.stringify(res));
+		    }).catch(e => {
+		    	console.error(e);
+		    });
+		}
+		function sendDeviceCommand(device, value) {
+	    	let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
+				method: 'post'
+		    }).then(res => res.json()).then(res => {
+		    	console.log(JSON.stringify(res));
+		    }).catch(e => {
+		    	console.error(e);
+		    });
+		}
+		</script>
+	`);
 });
 
 console.log("Starting server");

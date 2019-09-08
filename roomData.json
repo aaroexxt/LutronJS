@@ -3,13 +3,13 @@
 		"AaronR": {
 			"identifier": 2,
 			"power": 100,
-			"rampUpTime": "00:05",
+			"rampUpTime": "00:01",
 			"rampDownTime": "00:05"
 		},
 		"AaronL": {
 			"identifier": 3,
 			"power": 100,
-			"rampUpTime": "00:05",
+			"rampUpTime": "00:01",
 			"rampDownTime": "00:05"
 		}
 	},
