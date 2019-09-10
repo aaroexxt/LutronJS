@@ -29,7 +29,6 @@ Run this lol
 /* Dependency initialization */
 
 const settings = {
-	assetsDirectory: "assets",
 	baseHubIP: "192.168.1.33",
 	baseHubUser: "lutron",
 	baseHubPass: "integration",
@@ -104,10 +103,7 @@ const app = express();
 const server = http.Server(app);
 
 //Instantiate all express packages
-//app.use(serveFavicon(path.join(cwd,runtimeSettings.faviconDirectory))); //serve favicon
 app.use(cors()); //enable cors
-
-app.use(express.static(path.join(cwd,settings.assetsDirectory))); //define a static directory
 
 app.use(bodyParser.urlencoded({ extended: true })); //, limit: '50mb' })); //bodyparser for getting json data
 app.use(bodyParser.json());
@@ -169,32 +165,27 @@ var deviceHTML = "";
 let deviceKeys = Object.keys(roomData.devices);
 for (let i=0; i<deviceKeys.length; i++) {
 	deviceHTML+=`<p>Device: ${deviceKeys[i]}</p>`;
-	deviceHTML+="<br>";
 	deviceHTML+=`<input id="${deviceKeys[i]}Slider" type="range" min="0" max="100" value="100" oninput="document.getElementById('${deviceKeys[i]}Value').innerHTML = 'Value: '+this.value;"></input>`
-	deviceHTML+="<br>";
 	deviceHTML+=`<p id="${deviceKeys[i]}Value">Value: 100</p>`
 	deviceHTML+=`<button onclick="sendDeviceNameCommand('${deviceKeys[i]}',document.getElementById('${deviceKeys[i]}Slider').value);">Set Device Value</button>`;
-	deviceHTML+=`<br>`;
+	deviceHTML+=`<br><br>`;
 }
 
 var locationHTML = "";
 let locationKeys = Object.keys(roomData.locations);
 for (let i=0; i<locationKeys.length; i++) {
 	locationHTML+=`<p>Location: ${locationKeys[i]}</p>`;
-	locationHTML+="<br>";
 	locationHTML+=`<input id="${locationKeys[i]}Slider" type="range" min="0" max="100" value="100" oninput="document.getElementById('${locationKeys[i]}Value').innerHTML = 'Value: '+this.value;"></input>`
-	locationHTML+="<br>";
 	locationHTML+=`<p id="${locationKeys[i]}Value">Value: 100</p>`
 	locationHTML+=`<button onclick="sendLocationCommand('${locationKeys[i]}',document.getElementById('${locationKeys[i]}Slider').value);">Set Location Value</button>`;
-	locationHTML+=`<br>`;
+	locationHTML+=`<br><br>`;
 }
 
 app.use(function(req, res, next){ //404 page
 	res.send(`
-		<h1>Aaron's Light Manager</h1>
-		<br><br>
-		<h3>Devices:</h3>
+		<h1>Aaron's Light Manager V1</h1>
 		<br>
+		<h3>Devices:</h3>
 		${deviceHTML}
 		<br>
 		<h3>Locations:</h3>

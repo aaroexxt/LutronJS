@@ -219,7 +219,7 @@ class telnetM {
 							}).catch(e => {
 								return reject(e);
 							});
-						}).catch( e => {
+						}).catch(e => {
 							return reject(e);
 						})
 					}).catch(e => {

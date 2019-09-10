@@ -4,13 +4,13 @@
 			"identifier": 2,
 			"power": 100,
 			"rampUpTime": "00:01",
-			"rampDownTime": "00:05"
+			"rampDownTime": "00:01"
 		},
 		"AaronL": {
 			"identifier": 3,
 			"power": 100,
 			"rampUpTime": "00:01",
-			"rampDownTime": "00:05"
+			"rampDownTime": "00:01"
 		}
 	},
 	"locations": {
