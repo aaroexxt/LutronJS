@@ -8,7 +8,7 @@ const telnetLog = log => {
 	}
 }
 class telnetM {
-	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 2000, connectTimeout = 1000) {
+	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 10000, connectTimeout = 1000) {
 		console.log("Instantiating telnetM with:\nIP:"+ip+"\nUSER:"+user+"\nPASS: "+pass);
 		//State stuff
 		this.isAuthenticated = false;
