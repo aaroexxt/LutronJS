@@ -1,7 +1,10 @@
 const http = require('http');
 
+const debugMode = false;
 const timingLog = log => {
-	console.log("Timer: "+log);
+	if (debugMode) {
+		console.log("Timer: "+log);
+	}
 }
 
 class timingM {
@@ -66,13 +69,13 @@ class timingM {
 		this.trgLevels = level;
 		this.trgDevices = devices;
 
-		this.updateLoop = setInterval(function(){self.checkEvents()},5000); //setup interval handler to check minutes
+		this.updateLoop = setInterval(function(){self.checkEvents()},60000); //setup interval handler to check minutes
 
 		
 	}
 
 	checkEvents() {
-		console.log("CheckEvents called using ipAddr: "+this.ipAddr);
+		timingLog("CheckEvents called using ipAddr: "+this.ipAddr);
 		function reject(e) {
 			console.warn("TimerSetting failed during event because "+e);
 		}
@@ -80,16 +83,16 @@ class timingM {
 		this.getCurrentTime().then(time => {
 			//Process: once we have time, check which events could potentially be relevant and issue the appropriate request
 			for (let i=0; i<this.tsArr.length; i++) {
-				if (this.trgTimes[0] == time.hours && this.trgTimes[1] == time.minutes) { //event match
-					console.log("TimeEvent at ",time);
+				if (this.trgTimes[i][0] == time.hours && this.trgTimes[i][1] == time.minutes) { //event match
+					timingLog("TimeEvent at "+JSON.stringify(time));
 					var checkLight = index => {
-						this.hubInstance.lookupDeviceName(this.trgDevices[index], this.trgLevels[i]).then(device => {
-							console.log("dN: "+device.identifier);
+						this.hubInstance.lookupDeviceName(this.trgDevices[i][index], this.trgLevels[i]).then(device => {
+							//console.log("dN: "+device.identifier);
 							this.hubInstance.getLightOutput(device.identifier).then(currentValue => {
 								let ramp = (this.trgLevels[i] >= currentValue) ? device.rampUpTime : device.rampDownTime;
 								
-								function finish() {
-									if (index < this.trgDevices.length-1) { //need to keep iterating
+								var finish = () => {
+									if (index < this.trgDevices[i].length-1) { //need to keep iterating
 										checkLight(index+1);
 									}
 								}

@@ -1,8 +1,11 @@
 const net = require('net');
 const EOL = "\r\n"; //end of line to server
 
+const debugMode = false;
 const telnetLog = log => {
-	console.log("TelnetClient: "+log);
+	if (debugMode) {
+		console.log("TelnetClient: "+log);
+	}
 }
 class telnetM {
 	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 2000, connectTimeout = 1000) {

@@ -59,7 +59,7 @@ var roomData = JSON.parse(rdContents);
 //Hub connection via telnet server
 const hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings.baseHubPass, roomData);
 var hubConnected = false;
-/*hub.begin().then(() => {
+hub.begin().then(() => {
 	hubConnected = true;
 	console.log("Hub connected");
 	/**** EXAMPLE USAGE
@@ -88,10 +88,10 @@ var hubConnected = false;
 		console.error(e);
 	})
 	*/
-/*}).catch(e => {
+}).catch(e => {
 	console.error("Hub connection failure: "+e);
 	process.exit(1);
-});*/
+});
 
 //Timer setup for autodimming of lights, etc
 const timing = new timingHandler(roomData.timeShift, hub);

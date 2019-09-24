@@ -20,7 +20,6 @@
 	},
 	"timeShift": [
 		{"at": "10:00,pm", "maxLevel": 50, "devices": ["AaronR","AaronL"]},
-		{"at": "10:27,pm", "maxLevel": 50, "devices": ["AaronR","AaronL"]},
 		{"at": "11:00,pm", "maxLevel": 25, "devices": ["AaronR","AaronL"]},
 		{"at": "11:30,pm", "maxLevel": 15, "devices": ["AaronR","AaronL"]},
 		{"at": "12:00,am", "maxLevel": 2, "devices": ["AaronR","AaronL"]}
