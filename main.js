@@ -48,6 +48,7 @@ const cors = require('cors');
 //Additional core utilities
 const {RequestHandler, Util} = require("./core/serverUtilities.js");
 const telnetHandler = require("./core/telnetM.js");
+const timingHandler = require("./core/timingM.js");
 console.log("Required all packages successfully");
 
 /* Initialization */
@@ -56,9 +57,9 @@ const rdContents = fs.readFileSync(settings.roomDataPath, 'utf8')
 var roomData = JSON.parse(rdContents);
 
 //Hub connection via telnet server
-var hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings.baseHubPass, roomData);
+const hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings.baseHubPass, roomData);
 var hubConnected = false;
-hub.begin().then(() => {
+/*hub.begin().then(() => {
 	hubConnected = true;
 	console.log("Hub connected");
 	/**** EXAMPLE USAGE
@@ -87,10 +88,13 @@ hub.begin().then(() => {
 		console.error(e);
 	})
 	*/
-}).catch(e => {
+/*}).catch(e => {
 	console.error("Hub connection failure: "+e);
 	process.exit(1);
-});
+});*/
+
+//Timer setup for autodimming of lights, etc
+const timing = new timingHandler(roomData.timeShift, hub);
 
 //setup pointer to current working directory
 const cwd = __dirname;
@@ -224,7 +228,7 @@ app.use(function(req, res, next){ //404 page
 });
 
 console.log("Starting server");
-const port = process.env.PORT || 1337;
+const port = process.env.PORT || 80;
 server.listen(port);
 
-console.log("Server running at http://localhost:"+port);
+console.log("LutronJS Server running at http://localhost:"+port+" :)");
