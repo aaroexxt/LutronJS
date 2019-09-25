@@ -127,7 +127,6 @@ class timingM {
 			}, function(res) {
 				if (res.statusCode != 200) {
 					console.error("Warning: timer unable to get currentTime");
-					process.exit(1);
 				}
 
 				res.on("data", function(chunk) {
