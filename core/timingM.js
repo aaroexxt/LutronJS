@@ -116,7 +116,7 @@ class timingM {
 					checkLight(0); //start recursive function
 				}
 			}
-		})
+		}).catch(e => console.log("Failed to getCurrentTime because: "+e);
 	}
 
 	getCurrentTime() {
@@ -128,12 +128,17 @@ class timingM {
 			}, function(res) {
 				if (res.statusCode != 200) {
 					console.error("Warning: timer unable to get currentTime");
+					return reject("network error");
 				}
 
 				res.on("data", function(chunk) {
-					var data = JSON.parse(chunk.toString());
-					var d = new Date(Date.parse(data.utc_datetime)+(data.raw_offset*1000));
-					return resolve ({hours: d.getHours(), minutes: d.getMinutes()});
+					try {
+						var data = JSON.parse(chunk.toString());
+						var d = new Date(Date.parse(data.utc_datetime)+(data.raw_offset*1000));
+						return resolve ({hours: d.getHours(), minutes: d.getMinutes()});
+					} catch (e => {
+						return reject("JSON parsing error");
+					}
 				});
 			}).on('error', function(e) {
 				console.warn("Warning: timer unable to get currentTime (e= "+e.message+")");
