@@ -1,6 +1,6 @@
 const http = require('http');
 
-const debugMode = false;
+const debugMode = true;
 const timingLog = log => {
 	if (debugMode) {
 		console.log("Timer: "+log);
@@ -82,6 +82,7 @@ class timingM {
 
 		this.getCurrentTime().then(time => {
 			//Process: once we have time, check which events could potentially be relevant and issue the appropriate request
+			timingLog("TimeEvent at "+JSON.stringify(time));
 			for (let i=0; i<this.tsArr.length; i++) {
 				if (this.trgTimes[i][0] == time.hours && this.trgTimes[i][1] == time.minutes) { //event match
 					timingLog("TimeEvent at "+JSON.stringify(time));
