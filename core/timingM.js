@@ -131,7 +131,8 @@ class timingM {
 				}
 
 				res.on("data", function(chunk) {
-					var d = new Date(JSON.parse(chunk).unixtime*1000);
+					var data = JSON.parse(chunk.toString());
+					var d = new Date(Date.parse(data.utc_datetime)+(data.raw_offset*1000));
 					return resolve ({hours: d.getHours(), minutes: d.getMinutes()});
 				});
 			}).on('error', function(e) {
