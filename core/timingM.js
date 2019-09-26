@@ -128,7 +128,7 @@ class timingM {
 			}, function(res) {
 				if (res.statusCode != 200) {
 					console.error("Warning: timer unable to get currentTime");
-					return reject("network error");
+					return reject("likely network error");
 				}
 
 				res.on("data", function(chunk) {
@@ -142,6 +142,7 @@ class timingM {
 				});
 			}).on('error', function(e) {
 				console.warn("Warning: timer unable to get currentTime (e= "+e.message+")");
+				return reject("likely network error");
 			});
 		});
 	}
