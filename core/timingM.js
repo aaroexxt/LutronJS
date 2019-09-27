@@ -116,7 +116,7 @@ class timingM {
 					checkLight(0); //start recursive function
 				}
 			}
-		}).catch(e => console.log("Failed to getCurrentTime because: "+e);
+		}).catch(e => console.log("Failed to getCurrentTime because: "+e));
 	}
 
 	getCurrentTime() {
@@ -136,7 +136,7 @@ class timingM {
 						var data = JSON.parse(chunk.toString());
 						var d = new Date(Date.parse(data.utc_datetime)+(data.raw_offset*1000));
 						return resolve ({hours: d.getHours(), minutes: d.getMinutes()});
-					} catch (e => {
+					} catch(e) {
 						return reject("JSON parsing error");
 					}
 				});
