@@ -212,13 +212,19 @@
 		<script>
 			//Jank workaround for location auto percentage updating
 			var hElems = document.getElementsByTagName("h4");
-			for(let i=0; i<hElems.length; i++) {
-				if (hElems[i].id.indexOf("LOC") > -1) {
-					getLocationValue(hElems[i].id.replace("LOC","")).then(value => {
-						hElems[i].innerHTML+=value+"%";
+			var updateIndex = index => {
+				if (hElems[index].id.indexOf("LOC") > -1) {
+					getLocationValue(hElems[index].id.replace("LOC","")).then(value => {
+						hElems[index].innerHTML+=value+"%";
+						if (index < hElems.length-1) {
+							updateIndex(index+1);
+						} else {
+							console.log("Index updating done");
+						}
 					})
 				}
 			}
+			updateIndex(0); //start updating
 
 
 			function getDeviceValue(device) {
@@ -248,30 +254,30 @@
 					method: 'post'
 			    }).then(res => res.json()).then(res => {
 			    	console.log(JSON.stringify(res));
+				window.location.reload(); //Only reload after request succeeds so that server is not overwhelmed
 			    }).catch(e => {
 			    	console.error(JSON.stringify(e));
 			    });
-			    window.location.reload();
 			}
 			function sendDeviceCommand(device, value) {
 		    	let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
 					method: 'post'
 			    }).then(res => res.json()).then(res => {
 			    	console.log(JSON.stringify(res));
+				window.location.reload(); //Only reload after request succeeds so that server is not overwhelmed
 			    }).catch(e => {
 			    	console.error(JSON.stringify(e));
 			    });
-			    window.location.reload();
 			}
 			function sendLocationCommand(loc, value) {
 		    	let response = fetch("http://"+document.location.host+"/location/"+loc+"/"+value, {
 					method: 'post'
 			    }).then(res => res.json()).then(res => {
 			    	console.log(JSON.stringify(res));
+				window.location.reload(); //Only reload after request succeeds so that server is not overwhelmed
 			    }).catch(e => {
 			    	console.error(JSON.stringify(e));
 			    });
-			    window.location.reload();
 			}
 
 			function deltaDeviceValue(device, delta) {
