@@ -40,6 +40,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const express = require('express');
+const ejs = require('ejs');
 
 //Express dependencies
 const bodyParser = require('body-parser');
@@ -61,6 +62,8 @@ const hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings
 var hubConnected = false;
 hub.begin().then(() => {
 	hubConnected = true;
+	console.log("Running initial UDI scan");
+	setTimeout(updateAllDevicePowers,1000); //perform initial devicePower update
 	console.log("Hub connected");
 	/**** EXAMPLE USAGE
 
@@ -93,8 +96,28 @@ hub.begin().then(() => {
 	process.exit(1);
 });
 
+let UDIDebug = false;
+function updateAllDevicePowers() {
+	var rdKeys = Object.keys(roomData.devices);
+	var updateDeviceIndex = index => {
+		if (UDIDebug) {console.log("UDI call "+index)};
+		hub.getLightOutput(roomData.devices[rdKeys[index]].identifier).then(value => {
+			roomData.devices[rdKeys[index]].power = Number(value);
+ 			if (index < rdKeys.length-1) {
+ 				updateDeviceIndex(index+1);
+ 			} else {
+ 				if (UDIDebug) {console.log("UDI scan finished")};
+ 			}
+		}).catch(e => {
+			console.error("Light output value fail: "+e);
+		});
+	};
+	updateDeviceIndex(0); //start updating
+}
+setInterval(updateAllDevicePowers,60000); //will ensure that device powers are accurate if manually changed
+
 //Timer setup for autodimming of lights, etc
-const timing = new timingHandler(roomData.timeShift, hub);
+const timing = new timingHandler(roomData.timeShift, hub); //pass in hub reference to allow control
 
 //setup pointer to current working directory
 const cwd = __dirname;
@@ -111,6 +134,7 @@ app.use(cors()); //enable cors
 
 app.use(bodyParser.urlencoded({ extended: true })); //, limit: '50mb' })); //bodyparser for getting json data
 app.use(bodyParser.json());
+app.set('view engine', 'ejs'); //ejs gang
 
 console.log("Initializing express routing");
 //Initialize express routing
@@ -186,45 +210,11 @@ for (let i=0; i<locationKeys.length; i++) {
 }
 
 app.use(function(req, res, next){ //404 page
-	res.send(`
-		<h1>Aaron's Light Manager V1</h1>
-		<br>
-		<h3>Devices:</h3>
-		${deviceHTML}
-		<br>
-		<h3>Locations:</h3>
-		${locationHTML}
-		<h3>
-		<script>
-		function sendDeviceNameCommand(deviceName, value) { 
-	    	let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
-				method: 'post'
-		    }).then(res => res.json()).then(res => {
-		    	console.log(JSON.stringify(res));
-		    }).catch(e => {
-		    	console.error(JSON.stringify(e));
-		    });
-		}
-		function sendDeviceCommand(device, value) {
-	    	let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
-				method: 'post'
-		    }).then(res => res.json()).then(res => {
-		    	console.log(JSON.stringify(res));
-		    }).catch(e => {
-		    	console.error(JSON.stringify(e));
-		    });
-		}
-		function sendLocationCommand(loc, value) {
-	    	let response = fetch("http://"+document.location.host+"/location/"+loc+"/"+value, {
-				method: 'post'
-		    }).then(res => res.json()).then(res => {
-		    	console.log(JSON.stringify(res));
-		    }).catch(e => {
-		    	console.error(JSON.stringify(e));
-		    });
-		}
-		</script>
-	`);
+	res.render('index', {
+		locations: roomData.locations,
+		devices: roomData.devices,
+		status: hubConnected ? "OK" : "Error"
+	});
 });
 
 console.log("Starting server");

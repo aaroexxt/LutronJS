@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>ALM V1</title>
+		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	</head>
+	<body class="container">
+		<div class="jumbotron" style="width: 100%;">
+	        <h1 class="text-center">Aaron's Light Manager V1</h1>
+	        <h6 class="text-center" style="padding-top: 20px;">Server connection status: <%= status %></h6>
+			<br>
+			<h3>Devices:</h3>
+			<% if (devices) { %>
+			<% var deviceKeys = Object.keys(devices) %>
+			<% for (let i=0; i<deviceKeys.length; i++) {%>
+			  	<h4 style="padding-left: 20px"><%= deviceKeys[i] %>: <%=devices[Object.keys(devices)[i]].power%>%</h4>
+			<% } %>
+			<% } %>
+			<br>
+			<h3>Locations:</h3>
+    	</div>
+    	<p class="text-center text-muted">© Copyright 2019 Aaron Becker</p>
+		<script>
+		function sendDeviceNameCommand(deviceName, value) { 
+	    	let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
+				method: 'post'
+		    }).then(res => res.json()).then(res => {
+		    	console.log(JSON.stringify(res));
+		    }).catch(e => {
+		    	console.error(JSON.stringify(e));
+		    });
+		}
+		function sendDeviceCommand(device, value) {
+	    	let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
+				method: 'post'
+		    }).then(res => res.json()).then(res => {
+		    	console.log(JSON.stringify(res));
+		    }).catch(e => {
+		    	console.error(JSON.stringify(e));
+		    });
+		}
+		function sendLocationCommand(loc, value) {
+	    	let response = fetch("http://"+document.location.host+"/location/"+loc+"/"+value, {
+				method: 'post'
+		    }).then(res => res.json()).then(res => {
+		    	console.log(JSON.stringify(res));
+		    }).catch(e => {
+		    	console.error(JSON.stringify(e));
+		    });
+		}
+		</script>
+	</body>
+</html> 
