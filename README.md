@@ -10,5 +10,5 @@ Instructions:
  - BodyParser
  - CORS
  - Path
-3) Run the "main.js script. I like to use ```nohup sudo node main.js &``` so that it runs in the background
+3) Run the "main.js" script. I like to use ```nohup sudo node main.js &``` so that it runs in the background
 Enjoy!
