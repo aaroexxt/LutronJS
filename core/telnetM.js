@@ -7,6 +7,15 @@ const telnetLog = log => {
 		console.log("TelnetClient: "+log);
 	}
 }
+
+const clampPower = newPower => {
+	if (newPower > 100) {
+		return 100;
+	} else if (newPower < 0) {
+		return 0;
+	}
+	return newPower;
+}
 class telnetM {
 	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 30000, connectTimeout = 30000) {
 		console.log("Instantiating telnetM with:\nIP:"+ip+"\nUSER:"+user+"\nPASS: "+pass);
@@ -106,6 +115,7 @@ class telnetM {
 	}
 
 	setLightOutput(device = 2, value = 100, rampTime = "00:05") {
+		value = clampPower(value);
 		return new Promise((resolve, reject) => {
 			this.sendCommand("#OUTPUT",device,1,[value,rampTime]);
 			this.waitUntilRecv().then(response => {
@@ -178,11 +188,14 @@ class telnetM {
 
 	lookupDeviceName(name = "", newPower = 100) { //set power on lookup
 		name = name.toLowerCase();
+		newPower = clampPower(newPower);
 		return new Promise((resolve, reject) => {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
 				if (devicesIndices[i].toLowerCase() == name) { //indices are names
-					this.devices[devicesIndices[i]].power = newPower;
+					if (newPower) {
+						this.devices[devicesIndices[i]].power = newPower;
+					}
 					return resolve(this.devices[devicesIndices[i]]);
 				}
 			}
@@ -191,11 +204,14 @@ class telnetM {
 	}
 
 	lookupDeviceIdentifier(identifier = 0, newPower = 100) {
+		newPower = clampPower(newPower);
 		return new Promise((resolve, reject) => {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
 				if (this.devices[devicesIndices[i]].identifier == identifier) { //indices are names
-					this.devices[devicesIndices[i]].power = newPower;
+					if (newPower) {
+						this.devices[devicesIndices[i]].power = newPower;
+					}
 					return resolve(this.devices[devicesIndices[i]]);
 				}
 			}
@@ -204,6 +220,7 @@ class telnetM {
 	}
 
 	setLocationLight(name = "", value = 100) {
+		value = clampPower(value);
 		name = name.toLowerCase();
 		return new Promise((resolve, reject) => {
 			this.lookupLocation(name).then(locationObject => {
@@ -230,6 +247,37 @@ class telnetM {
 					})
 				};
 				setLight(0); //start recursive function
+			}).catch(e => {
+				return reject(e);
+			})
+		})
+	}
+
+	getLocationLight(name = "") { //average all devices in location
+		name = name.toLowerCase();
+		return new Promise((resolve, reject) => {
+			this.lookupLocation(name).then(locationObject => {
+				var lightAvg = 0;
+				var getLight = index => {
+					this.lookupDeviceName(locationObject.devices[index]).then(device => {
+						// console.log("dN: "+device.identifier);
+						this.getLightOutput(device.identifier).then(currentValue => {
+							lightAvg+=Number(currentValue);
+							if (index < locationObject.devices.length-1) { //need to keep iterating
+								getLight(index+1);
+							} else {
+								lightAvg/=locationObject.devices.length;
+								// console.log("lA"+lightAvg);
+								return resolve(lightAvg); //now we're done
+							}
+						}).catch(e => {
+							return reject(e);
+						})
+					}).catch(e => {
+						return reject(e); //send reject up chain
+					})
+				};
+				getLight(0); //start recursive function
 			}).catch(e => {
 				return reject(e);
 			})

@@ -188,26 +188,22 @@ app.post("/location/:location/:newValue", function(req, res) {
 		return res.end(RequestHandler.FAILURE("Error setting room value: "+e+"\n"));
 	})
 })
-
-var deviceHTML = "";
-let deviceKeys = Object.keys(roomData.devices);
-for (let i=0; i<deviceKeys.length; i++) {
-	deviceHTML+=`<p>Device: ${deviceKeys[i]}</p>`;
-	deviceHTML+=`<input id="${deviceKeys[i]}Slider" type="range" min="0" max="100" value="100" oninput="document.getElementById('${deviceKeys[i]}Value').innerHTML = 'Value: '+this.value;"></input>`
-	deviceHTML+=`<p id="${deviceKeys[i]}Value">Value: 100</p>`
-	deviceHTML+=`<button onclick="sendDeviceNameCommand('${deviceKeys[i]}',document.getElementById('${deviceKeys[i]}Slider').value);">Set Device Value</button>`;
-	deviceHTML+=`<br><br>`;
-}
-
-var locationHTML = "";
-let locationKeys = Object.keys(roomData.locations);
-for (let i=0; i<locationKeys.length; i++) {
-	locationHTML+=`<p>Location: ${locationKeys[i]}</p>`;
-	locationHTML+=`<input id="${locationKeys[i]}Slider" type="range" min="0" max="100" value="100" oninput="document.getElementById('${locationKeys[i]}Value').innerHTML = 'Value: '+this.value;"></input>`
-	locationHTML+=`<p id="${locationKeys[i]}Value">Value: 100</p>`
-	locationHTML+=`<button onclick="sendLocationCommand('${locationKeys[i]}',document.getElementById('${locationKeys[i]}Slider').value);">Set Location Value</button>`;
-	locationHTML+=`<br><br>`;
-}
+app.post("/deviceValue/:device/", function(req, res) {
+	let device = req.params.device;
+	hub.getLightOutput(device).then(currentValue => {
+		return res.end(RequestHandler.SUCCESS(currentValue));
+	}).catch(e => {
+		return res.end(RequestHandler.FAILURE("Error getting light output value: "+e+"\n"));
+	})
+})
+app.post("/locationValue/:location/", function(req, res) {
+	let location = req.params.location;
+	hub.getLocationLight(location).then(currentValue => {
+		return res.end(RequestHandler.SUCCESS(currentValue));
+	}).catch(e => {
+		return res.end(RequestHandler.FAILURE("Error getting location output value: "+e+"\n"));
+	})
+})
 
 app.use(function(req, res, next){ //404 page
 	res.render('index', {

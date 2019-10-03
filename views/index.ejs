@@ -4,50 +4,291 @@
 		<title>ALM V1</title>
 		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 	</head>
+	<style>
+		.PUpButton {
+			-moz-box-shadow:inset 0px 1px 0px 0px #97c4fe;
+			-webkit-box-shadow:inset 0px 1px 0px 0px #97c4fe;
+			box-shadow:inset 0px 1px 0px 0px #97c4fe;
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #3d94f6), color-stop(1, #1e62d0));
+			background:-moz-linear-gradient(top, #3d94f6 5%, #1e62d0 100%);
+			background:-webkit-linear-gradient(top, #3d94f6 5%, #1e62d0 100%);
+			background:-o-linear-gradient(top, #3d94f6 5%, #1e62d0 100%);
+			background:-ms-linear-gradient(top, #3d94f6 5%, #1e62d0 100%);
+			background:linear-gradient(to bottom, #3d94f6 5%, #1e62d0 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#3d94f6', endColorstr='#1e62d0',GradientType=0);
+			background-color:#3d94f6;
+			-moz-border-radius:6px;
+			-webkit-border-radius:6px;
+			border-radius:6px;
+			border:1px solid #337fed;
+			display:inline-block;
+			cursor:pointer;
+			color:#ffffff;
+			font-family:Arial;
+			font-size:15px;
+			font-weight:bold;
+			padding:24px 24px;
+			text-decoration:none;
+			text-shadow:0px 1px 0px #1570cd;
+		}
+		.PUpButton:hover {
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #1e62d0), color-stop(1, #3d94f6));
+			background:-moz-linear-gradient(top, #1e62d0 5%, #3d94f6 100%);
+			background:-webkit-linear-gradient(top, #1e62d0 5%, #3d94f6 100%);
+			background:-o-linear-gradient(top, #1e62d0 5%, #3d94f6 100%);
+			background:-ms-linear-gradient(top, #1e62d0 5%, #3d94f6 100%);
+			background:linear-gradient(to bottom, #1e62d0 5%, #3d94f6 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#1e62d0', endColorstr='#3d94f6',GradientType=0);
+			background-color:#1e62d0;
+		}
+		.PUpButton:active {
+			position:relative;
+			top:1px;
+		}
+
+		.PDownButton {
+			-moz-box-shadow:inset 0px 1px 0px 0px #f9eca0;
+			-webkit-box-shadow:inset 0px 1px 0px 0px #f9eca0;
+			box-shadow:inset 0px 1px 0px 0px #f9eca0;
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #f0c911), color-stop(1, #f2ab1e));
+			background:-moz-linear-gradient(top, #f0c911 5%, #f2ab1e 100%);
+			background:-webkit-linear-gradient(top, #f0c911 5%, #f2ab1e 100%);
+			background:-o-linear-gradient(top, #f0c911 5%, #f2ab1e 100%);
+			background:-ms-linear-gradient(top, #f0c911 5%, #f2ab1e 100%);
+			background:linear-gradient(to bottom, #f0c911 5%, #f2ab1e 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f0c911', endColorstr='#f2ab1e',GradientType=0);
+			background-color:#f0c911;
+			-moz-border-radius:6px;
+			-webkit-border-radius:6px;
+			border-radius:6px;
+			border:1px solid #e65f44;
+			display:inline-block;
+			cursor:pointer;
+			color:#c92200;
+			font-family:Arial;
+			font-size:15px;
+			font-weight:bold;
+			padding:24px 24px;
+			text-decoration:none;
+			text-shadow:0px 1px 0px #ded17c;
+		}
+		.PDownButton:hover {
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #f2ab1e), color-stop(1, #f0c911));
+			background:-moz-linear-gradient(top, #f2ab1e 5%, #f0c911 100%);
+			background:-webkit-linear-gradient(top, #f2ab1e 5%, #f0c911 100%);
+			background:-o-linear-gradient(top, #f2ab1e 5%, #f0c911 100%);
+			background:-ms-linear-gradient(top, #f2ab1e 5%, #f0c911 100%);
+			background:linear-gradient(to bottom, #f2ab1e 5%, #f0c911 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f2ab1e', endColorstr='#f0c911',GradientType=0);
+			background-color:#f2ab1e;
+		}
+		.PDownButton:active {
+			position:relative;
+			top:1px;
+		}
+
+		.POnButton {
+			-moz-box-shadow:inset 0px 1px 0px 0px #caefab;
+			-webkit-box-shadow:inset 0px 1px 0px 0px #caefab;
+			box-shadow:inset 0px 1px 0px 0px #caefab;
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #77d42a), color-stop(1, #5cb811));
+			background:-moz-linear-gradient(top, #77d42a 5%, #5cb811 100%);
+			background:-webkit-linear-gradient(top, #77d42a 5%, #5cb811 100%);
+			background:-o-linear-gradient(top, #77d42a 5%, #5cb811 100%);
+			background:-ms-linear-gradient(top, #77d42a 5%, #5cb811 100%);
+			background:linear-gradient(to bottom, #77d42a 5%, #5cb811 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#77d42a', endColorstr='#5cb811',GradientType=0);
+			background-color:#77d42a;
+			-moz-border-radius:6px;
+			-webkit-border-radius:6px;
+			border-radius:6px;
+			border:1px solid #268a16;
+			display:inline-block;
+			cursor:pointer;
+			color:#306108;
+			font-family:Arial;
+			font-size:15px;
+			font-weight:bold;
+			padding:24px 24px;
+			text-decoration:none;
+			text-shadow:0px 1px 0px #aade7c;
+		}
+		.POnButton:hover {
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #5cb811), color-stop(1, #77d42a));
+			background:-moz-linear-gradient(top, #5cb811 5%, #77d42a 100%);
+			background:-webkit-linear-gradient(top, #5cb811 5%, #77d42a 100%);
+			background:-o-linear-gradient(top, #5cb811 5%, #77d42a 100%);
+			background:-ms-linear-gradient(top, #5cb811 5%, #77d42a 100%);
+			background:linear-gradient(to bottom, #5cb811 5%, #77d42a 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#5cb811', endColorstr='#77d42a',GradientType=0);
+			background-color:#5cb811;
+		}
+		.POnButton:active {
+			position:relative;
+			top:1px;
+		}
+
+		.POffButton {
+			-moz-box-shadow:inset 0px 1px 0px 0px #f29c93;
+			-webkit-box-shadow:inset 0px 1px 0px 0px #f29c93;
+			box-shadow:inset 0px 1px 0px 0px #f29c93;
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #fe1a00), color-stop(1, #ce0100));
+			background:-moz-linear-gradient(top, #fe1a00 5%, #ce0100 100%);
+			background:-webkit-linear-gradient(top, #fe1a00 5%, #ce0100 100%);
+			background:-o-linear-gradient(top, #fe1a00 5%, #ce0100 100%);
+			background:-ms-linear-gradient(top, #fe1a00 5%, #ce0100 100%);
+			background:linear-gradient(to bottom, #fe1a00 5%, #ce0100 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#fe1a00', endColorstr='#ce0100',GradientType=0);
+			background-color:#fe1a00;
+			-moz-border-radius:6px;
+			-webkit-border-radius:6px;
+			border-radius:6px;
+			border:1px solid #d83526;
+			display:inline-block;
+			cursor:pointer;
+			color:#ffffff;
+			font-family:Arial;
+			font-size:15px;
+			font-weight:bold;
+			padding:24px 24px;
+			text-decoration:none;
+			text-shadow:0px 1px 0px #b23e35;
+		}
+		.POffButton:hover {
+			background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #ce0100), color-stop(1, #fe1a00));
+			background:-moz-linear-gradient(top, #ce0100 5%, #fe1a00 100%);
+			background:-webkit-linear-gradient(top, #ce0100 5%, #fe1a00 100%);
+			background:-o-linear-gradient(top, #ce0100 5%, #fe1a00 100%);
+			background:-ms-linear-gradient(top, #ce0100 5%, #fe1a00 100%);
+			background:linear-gradient(to bottom, #ce0100 5%, #fe1a00 100%);
+			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ce0100', endColorstr='#fe1a00',GradientType=0);
+			background-color:#ce0100;
+		}
+		.POffButton:active {
+			position:relative;
+			top:1px;
+		}
+
+		.leftPad {
+			margin-left: 20px;
+		}
+
+	</style>
+
 	<body class="container">
 		<div class="jumbotron" style="width: 100%;">
 	        <h1 class="text-center">Aaron's Light Manager V1</h1>
 	        <h6 class="text-center" style="padding-top: 20px;">Server connection status: <%= status %></h6>
 			<br>
+			<h3>Locations:</h3>
+			<% if (locations) { %>
+			<% var locationKeys = Object.keys(locations) %>
+			<% for (let i=0; i<locationKeys.length; i++) {%>
+			  	<h4 class="leftPad" id="LOC<%=locationKeys[i]%>"><%= locationKeys[i] %>: </h4>
+			  	<a class="PUpButton" onclick="deltaLocationValue('<%=locationKeys[i]%>',25);">Up 25%</a>
+			  	<a class="PDownButton leftPad" onclick="deltaLocationValue('<%=locationKeys[i]%>',-25);">Down 25%</a>
+			  	<br>
+			  	<br>
+			  	<a class="POnButton" onclick="sendLocationCommand('<%=locationKeys[i]%>',100);">On</a>
+			  	<a class="POffButton leftPad" onclick="sendLocationCommand('<%=locationKeys[i]%>',0);">Off</a>
+			<% } %>
+			<% } %>
+			<br>
 			<h3>Devices:</h3>
 			<% if (devices) { %>
 			<% var deviceKeys = Object.keys(devices) %>
 			<% for (let i=0; i<deviceKeys.length; i++) {%>
-			  	<h4 style="padding-left: 20px"><%= deviceKeys[i] %>: <%=devices[Object.keys(devices)[i]].power%>%</h4>
+			  	<h4 class="leftPad"><%= deviceKeys[i] %>: <%=devices[Object.keys(devices)[i]].power%></h4>
+			  	<a class="PUpButton" onclick="deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>,25);">Up 25%</a>
+			  	<a class="PDownButton leftPad" onclick="deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>,-25);">Down 25%</a>
+			  	<br>
+			  	<br>
+			  	<a class="POnButton" onclick="sendDeviceCommand(<%=devices[deviceKeys[i]].identifier%>,100);">On</a>
+			  	<a class="POffButton leftPad" onclick="sendDeviceCommand(<%=devices[deviceKeys[i]].identifier%>,0);">Off</a>
 			<% } %>
 			<% } %>
-			<br>
-			<h3>Locations:</h3>
     	</div>
     	<p class="text-center text-muted">© Copyright 2019 Aaron Becker</p>
 		<script>
-		function sendDeviceNameCommand(deviceName, value) { 
-	    	let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
-				method: 'post'
-		    }).then(res => res.json()).then(res => {
-		    	console.log(JSON.stringify(res));
-		    }).catch(e => {
-		    	console.error(JSON.stringify(e));
-		    });
-		}
-		function sendDeviceCommand(device, value) {
-	    	let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
-				method: 'post'
-		    }).then(res => res.json()).then(res => {
-		    	console.log(JSON.stringify(res));
-		    }).catch(e => {
-		    	console.error(JSON.stringify(e));
-		    });
-		}
-		function sendLocationCommand(loc, value) {
-	    	let response = fetch("http://"+document.location.host+"/location/"+loc+"/"+value, {
-				method: 'post'
-		    }).then(res => res.json()).then(res => {
-		    	console.log(JSON.stringify(res));
-		    }).catch(e => {
-		    	console.error(JSON.stringify(e));
-		    });
-		}
+			//Jank workaround for location auto percentage updating
+			var hElems = document.getElementsByTagName("h4");
+			for(let i=0; i<hElems.length; i++) {
+				if (hElems[i].id.indexOf("LOC") > -1) {
+					getLocationValue(hElems[i].id.replace("LOC","")).then(value => {
+						hElems[i].innerHTML+=value+"%";
+					})
+				}
+			}
+
+
+			function getDeviceValue(device) {
+				return new Promise((resolve, reject) => {
+					let response = fetch("http://"+document.location.host+"/deviceValue/"+device, {
+						method: 'post'
+				    }).then(res => res.json()).then(res => {
+				    	return resolve(res.message);
+				    }).catch(e => {
+				    	return reject(e);
+				    });
+				})
+			}
+			function getLocationValue(device) {
+				return new Promise((resolve, reject) => {
+					let response = fetch("http://"+document.location.host+"/locationValue/"+device, {
+						method: 'post'
+				    }).then(res => res.json()).then(res => {
+				    	return resolve(res.message);
+				    }).catch(e => {
+				    	return reject(e);
+				    });
+				})
+			}
+			function sendDeviceNameCommand(deviceName, value) { 
+		    	let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
+					method: 'post'
+			    }).then(res => res.json()).then(res => {
+			    	console.log(JSON.stringify(res));
+			    }).catch(e => {
+			    	console.error(JSON.stringify(e));
+			    });
+			    window.location.reload();
+			}
+			function sendDeviceCommand(device, value) {
+		    	let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
+					method: 'post'
+			    }).then(res => res.json()).then(res => {
+			    	console.log(JSON.stringify(res));
+			    }).catch(e => {
+			    	console.error(JSON.stringify(e));
+			    });
+			    window.location.reload();
+			}
+			function sendLocationCommand(loc, value) {
+		    	let response = fetch("http://"+document.location.host+"/location/"+loc+"/"+value, {
+					method: 'post'
+			    }).then(res => res.json()).then(res => {
+			    	console.log(JSON.stringify(res));
+			    }).catch(e => {
+			    	console.error(JSON.stringify(e));
+			    });
+			    window.location.reload();
+			}
+
+			function deltaDeviceValue(device, delta) {
+				getDeviceValue(device).then(value => {
+					sendDeviceCommand(device, Number(value)+delta);
+				}).catch(e => {
+					console.error(e);
+				})
+			}
+
+			function deltaLocationValue(name, delta) {
+				getLocationValue(name).then(value => {
+					sendLocationCommand(name, Number(value)+delta);
+				}).catch(e => {
+					console.error(e);
+				})
+			}
 		</script>
 	</body>
 </html> 
