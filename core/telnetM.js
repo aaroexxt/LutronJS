@@ -13,6 +13,8 @@ const clampPower = newPower => {
 		return 100;
 	} else if (newPower < 0) {
 		return 0;
+	} else if (typeof newPower == "undefined") {
+		return 0;
 	}
 	return newPower;
 }
@@ -193,7 +195,7 @@ class telnetM {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
 				if (devicesIndices[i].toLowerCase() == name) { //indices are names
-					if (newPower) {
+					if (typeof newPower != "undefined") {
 						this.devices[devicesIndices[i]].power = newPower;
 					}
 					return resolve(this.devices[devicesIndices[i]]);
@@ -209,7 +211,7 @@ class telnetM {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
 				if (this.devices[devicesIndices[i]].identifier == identifier) { //indices are names
-					if (newPower) {
+					if (typeof newPower != "undefined") {
 						this.devices[devicesIndices[i]].power = newPower;
 					}
 					return resolve(this.devices[devicesIndices[i]]);

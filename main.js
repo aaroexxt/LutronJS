@@ -63,7 +63,7 @@ var hubConnected = false;
 hub.begin().then(() => {
 	hubConnected = true;
 	console.log("Running initial UDI scan");
-	setTimeout(updateAllDevicePowers,1000); //perform initial devicePower update
+	setTimeout(updateAllDevicePowers,60000); //perform initial devicePower update
 	console.log("Hub connected");
 	/**** EXAMPLE USAGE
 
@@ -114,7 +114,7 @@ function updateAllDevicePowers() {
 	};
 	updateDeviceIndex(0); //start updating
 }
-setInterval(updateAllDevicePowers,60000); //will ensure that device powers are accurate if manually changed
+setInterval(updateAllDevicePowers,5000); //will ensure that device powers are accurate if manually changed
 
 //Timer setup for autodimming of lights, etc
 const timing = new timingHandler(roomData.timeShift, hub); //pass in hub reference to allow control
