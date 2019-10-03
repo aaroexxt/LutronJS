@@ -198,7 +198,7 @@
 			<% if (devices) { %>
 			<% var deviceKeys = Object.keys(devices) %>
 			<% for (let i=0; i<deviceKeys.length; i++) {%>
-			  	<h4 class="leftPad"><%= deviceKeys[i] %>: <%=devices[Object.keys(devices)[i]].power%></h4>
+			  	<h4 class="leftPad"><%= deviceKeys[i] %>: <%=devices[Object.keys(devices)[i]].power%>%</h4>
 			  	<a class="PUpButton" onclick="deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>,25);">Up 25%</a>
 			  	<a class="PDownButton leftPad" onclick="deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>,-25);">Down 25%</a>
 			  	<br>

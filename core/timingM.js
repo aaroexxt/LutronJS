@@ -1,6 +1,6 @@
 const http = require('http');
 
-const debugMode = true;
+const debugMode = false;
 const timingLog = log => {
 	if (debugMode) {
 		console.log("Timer: "+log);
