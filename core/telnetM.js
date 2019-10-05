@@ -154,7 +154,7 @@ class telnetM {
 		})
 	}
 
-	waitUntilRecv(timeout = 10000) {
+	waitUntilRecv(timeout = 1500) {
 		return new Promise((resolve, reject) => {
 			var oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
 			var recvTimeout = setTimeout(() => {
