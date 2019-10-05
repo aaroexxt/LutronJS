@@ -124,7 +124,7 @@ class telnetM {
 				return resolve();
 			}).catch( e => {
 				return reject(e);
-			})
+			});
 		});
 	}
 
@@ -156,11 +156,8 @@ class telnetM {
 
 	waitUntilRecv(timeout = 1500) {
 		return new Promise((resolve, reject) => {
+			//Lmao this is actually the proper solution to do a deep copy wtf y nodejs
 			var oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
-			var recvTimeout = setTimeout(() => {
-				clearInterval(dataInterval);
-				return reject("DataBuffer timeout: no events");
-			},timeout);
 			var dataInterval = setInterval(() => {
 				if (this.dataBuffer.length != oldBuffer.length) {
 					let currentDB = this.dataBuffer;
@@ -172,6 +169,10 @@ class telnetM {
 				}
 				oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
 			});
+			var recvTimeout = setTimeout(() => {
+				clearInterval(dataInterval);
+				return reject("DataBuffer timeout: no events");
+			},timeout); //If server is overloaded and starts missing events, this loop will trigger and prevent the server from consuming 100% CPU as requests build up
 		})
 	}
 
