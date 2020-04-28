@@ -114,7 +114,7 @@ function updateAllDevicePowers() {
 	};
 	updateDeviceIndex(0); //start updating
 }
-setInterval(updateAllDevicePowers,5000); //will ensure that device powers are accurate if manually changed
+//setInterval(updateAllDevicePowers,5000); //will ensure that device powers are accurate if manually changed
 
 //Timer setup for autodimming of lights, etc
 const timing = new timingHandler(roomData.timeShift, hub); //pass in hub reference to allow control

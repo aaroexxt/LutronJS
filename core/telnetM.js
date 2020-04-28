@@ -1,7 +1,8 @@
 const net = require('net');
+const deviceCommandQueue = require('./deviceCommandQueue.js');
 const EOL = "\r\n"; //end of line to server
 
-const debugMode = false;
+const debugMode = true;
 const telnetLog = log => {
 	if (debugMode) {
 		console.log("TelnetClient: "+log);
@@ -19,7 +20,7 @@ const clampPower = newPower => {
 	return newPower;
 }
 class telnetM {
-	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 30000, connectTimeout = 30000) {
+	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 180000, connectTimeout = 10000, commandTimeout = 10000) {
 		console.log("Instantiating telnetM with:\nIP:"+ip+"\nUSER:"+user+"\nPASS: "+pass);
 		//State stuff
 		this.isAuthenticated = false;
@@ -36,16 +37,39 @@ class telnetM {
 		}
 		this.dataBuffer = [];
 		this.loginTimeout = loginTimeout;
+		this.connectionStatus = {
+			connected: false,
+			login: false
+		}
 		this.connectTimeout = connectTimeout;
+		this.commandTimeout = commandTimeout;
 		this.telnetClient = new net.Socket(); //Instantiate telnet server
+
+		this.commandQueue = new deviceCommandQueue("LutronQueue", false, debugMode);
+
+		setInterval(() => {
+			if (debugMode && this.commandQueue.queue.length > 0) {
+				this.commandQueue.queueDump();
+			}
+			if (this.commandQueue.hasElemThatCanSendCommand()) {
+				let elem = this.commandQueue.getTopElemWithCommand();
+				let rawCommand = elem.commandToSend;
+				telnetLog("Queue isNot empty, sending command='"+rawCommand+"'");
+
+				this.telnetClient.write(rawCommand+EOL);
+			}
+		},2000);
 	}
 
 	begin() {
 		return new Promise((resolve, reject) => {
 			//Setup timeout in case server fails to connect
 			var connectTimeout,loginTimeout;
+			this.connectionStatus.connected = false;
+			this.connectionStatus.login = false;
 			connectTimeout = setTimeout(() => {
 				telnetLog("Connection attempt timed out; killing instance");
+				this.connectionStatus.connected = false;
 				this.telnetClient.destroy();
 				return reject("Connection attempt timed out (Is the IP address correct?)");
 			},this.connectTimeout);
@@ -53,11 +77,13 @@ class telnetM {
 			//Setup Handlers
 			this.telnetClient.on("data", data => {
 				if (!this.isAuthenticated) { //checks for authenticated handler
+					telnetLog("got data before auth; sending auth request");
 					if (data.indexOf("login:") > -1) { //write the pass or user when prompted
 						this.telnetClient.write(this.login.user+EOL);
 					} else if (data.indexOf("password:") > -1) {
 						this.telnetClient.write(this.login.pass+EOL);
 					} else if (data.indexOf("GNET>") > -1) { //got the terminal; we're authenticated
+						this.connectionStatus.login = true;
 						telnetLog("authentication success");
 						clearTimeout(loginTimeout);
 						this.isAuthenticated = true;
@@ -70,13 +96,19 @@ class telnetM {
 			this.telnetClient.on("close", () => {
 				console.log("Telnet client closed the connection; server terminating");
 				this.telnetClient.destroy();
+				this.connectionStatus.connected = false;
+				this.connectionStatus.login = false;
 				return reject("Client closed connection");
 			});
 			this.telnetClient.on("ready", () => {
 				telnetLog("ready");
+				this.connectionStatus.connected = true;
+				this.connectionStatus.login = false;
 				loginTimeout = setTimeout(() => {
 					telnetLog("Login attempt timed out; killing instance");
 					this.telnetClient.destroy();
+					this.connectionStatus.connected = false;
+					this.connectionStatus.login = false;
 					return reject("Login attempt timed out (Is the username/password correct?)");
 				},this.loginTimeout);
 			})
@@ -93,34 +125,48 @@ class telnetM {
 	recv(data) {
 		// console.log("Recieved data: "+data);
 		if (data.toString().indexOf("GNET>" == -1)) { //only push data with useful info
-			this.dataBuffer.push(data.toString());
+			this.commandQueue.checkForCompletions(data.toString());
 		}
 	}
 
 	sendCommand(command = "#OUTPUT", device = 1, action = 1, parameters = undefined) {
-		let sendCommand = command+","+device+","+action; //selectively send based on whether there's a parameter
-		switch (typeof parameters) { //put in switch to determine what to do with parameters
-			case "object":
-				for (let i=0; i<parameters.length; i++) {
+		return new Promise((resolve, reject) => {
+			if (!this.connectionStatus.connected) {
+				return reject("Err: not connected to lights");
+			}
+			if (!this.connectionStatus.login) {
+				return reject("Err: not logged in to lights telnet shell");
+			}
+			let sendCommand = command+","+device+","+action; //selectively send based on whether there's a parameter
+			switch (typeof parameters) { //put in switch to determine what to do with parameters
+				case "object":
+					for (let i=0; i<parameters.length; i++) {
+						sendCommand+=",";
+						sendCommand+=parameters[i];
+					}
+					break;
+				case "string":
+				case "number":
 					sendCommand+=",";
-					sendCommand+=parameters[i];
-				}
-				break;
-			case "string":
-			case "number":
-				sendCommand+=",";
-				sendCommand+=parameters;
-				break;
-		}
-		telnetLog("Sending command: "+sendCommand)
-		this.telnetClient.write(sendCommand+EOL); //Make sure to send EOL so server understands
+					sendCommand+=parameters;
+					break;
+			}
+			telnetLog("Adding command to queue: "+sendCommand);
+			let resp = "~"+sendCommand.substring(1);
+			this.commandQueue.addItem(sendCommand, resp, this.commandTimeout).then(resp => {
+				telnetLog("LutronQueue returned OK: "+resp);
+				return resolve(resp);
+			}).catch(e => {
+				telnetLog("LutronQueue returned e: "+e);
+				return reject(e);
+			});
+		});
 	}
 
 	setLightOutput(device = 2, value = 100, rampTime = "00:05") {
 		value = clampPower(value);
 		return new Promise((resolve, reject) => {
-			this.sendCommand("#OUTPUT",device,1,[value,rampTime]);
-			this.waitUntilRecv().then(response => {
+			this.sendCommand("#OUTPUT",device,1,[value,rampTime]).then(response => {
 				return resolve();
 			}).catch( e => {
 				return reject(e);
@@ -130,49 +176,16 @@ class telnetM {
 
 	getLightOutput(device = 1) {
 		return new Promise((resolve, reject) => {
-			this.sendCommand("?OUTPUT",device,1);
-			let tries = 10;
-			var waitForData = () => {
-				this.waitUntilRecv().then(response => {
-					for (let i=0; i<response.length; i++) {
-						if (response[i].indexOf("~OUTPUT,"+device) > -1) {
-							return resolve(response[i].toString().split(",")[3]);
-						}
+			this.sendCommand("?OUTPUT",device,1).then(response => {
+				for (let i=0; i<response.length; i++) {
+					if (response[i].indexOf("~OUTPUT,"+device) > -1) {
+						return resolve(response[i].toString().split(",")[3]);
 					}
-					// console.log("TRY: "+tries);
-					if (tries > 0) {
-						tries--;
-						waitForData();
-					} else {
-						return reject("Couldn't get value of device; didn't show up in data (data="+response+")");
-					}
-				}).catch(rj => {
-					return reject(rj); //pass error up chain
-				});
-			}
-			waitForData();
-		})
-	}
-
-	waitUntilRecv(timeout = 1500) {
-		return new Promise((resolve, reject) => {
-			//Lmao this is actually the proper solution to do a deep copy wtf y nodejs
-			var oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
-			var dataInterval = setInterval(() => {
-				if (this.dataBuffer.length != oldBuffer.length) {
-					let currentDB = this.dataBuffer;
-					this.dataBuffer = []; //clear DataBuffer
-
-					clearInterval(dataInterval); //clear timeouts & intervals
-					clearTimeout(recvTimeout);
-					return resolve(currentDB); //resolve function
 				}
-				oldBuffer = JSON.parse(JSON.stringify(this.dataBuffer)); //somewhat hacky solution to not have oldBuffer directly reference memory address of this.dataBuffer
-			});
-			var recvTimeout = setTimeout(() => {
-				clearInterval(dataInterval);
-				return reject("DataBuffer timeout: no events");
-			},timeout); //If server is overloaded and starts missing events, this loop will trigger and prevent the server from consuming 100% CPU as requests build up
+				return reject("OutputCMDResponse did not contain light we were looking for");
+			}).catch(e => {
+				return reject(e);
+			})
 		})
 	}
 
