@@ -11,17 +11,23 @@
 			"power": 100,
 			"rampUpTime": "00:01",
 			"rampDownTime": "00:01"
+		},
+		"AaronL2": {
+			"identifier": 12,
+			"power": 100,
+			"rampUpTime": "00:01",
+			"rampDownTime": "00:01"
 		}
 	},
 	"locations": {
 		"AaronsRoom": {
-			"devices": ["AaronR","AaronL"]
+			"devices": ["AaronR","AaronL","AaronL2"]
 		}
 	},
 	"timeShift": [
-		{"at": "10:00,pm", "maxLevel": 50, "devices": ["AaronR","AaronL"]},
-		{"at": "11:00,pm", "maxLevel": 25, "devices": ["AaronR","AaronL"]},
-		{"at": "11:30,pm", "maxLevel": 15, "devices": ["AaronR","AaronL"]},
-		{"at": "12:00,am", "maxLevel": 2, "devices": ["AaronR","AaronL"]}
+		{"at": "10:00,pm", "maxLevel": 50, "devices": ["AaronR","AaronL","AaronL2"]},
+		{"at": "11:00,pm", "maxLevel": 25, "devices": ["AaronR","AaronL","AaronL2"]},
+		{"at": "11:30,pm", "maxLevel": 15, "devices": ["AaronR","AaronL","AaronL2"]},
+		{"at": "12:00,am", "maxLevel": 2, "devices": ["AaronR","AaronL","AaronL2"]}
 	]
 }
