@@ -12,6 +12,7 @@
  - Path
 3) Run the "main.js" script. I like to use ```nohup sudo node main.js &``` so that it runs in the background
 Enjoy!
+4) **IMPORTANT: you need to configure your home setup in roomData.json, otherwise this will not work. You need the light identifier number that you can find in the Lutron mobile app (Settings -> Advanced Settings -> Integration -> Send Integration Support, identifier number = "ID" parameter in that JSON file). In addition, make sure the "Telnet Support" switch is toggled on.**
 
 ### Update/Install Script (For Aaron mostly)
 ```
