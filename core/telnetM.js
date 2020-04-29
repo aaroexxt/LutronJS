@@ -20,8 +20,12 @@ const clampPower = newPower => {
 	return newPower;
 }
 class telnetM {
-	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 180000, connectTimeout = 10000, commandTimeout = 10000) {
+	constructor(ip = "192.168.1.33", user = "lutron", pass = "integration", roomData = {}, loginTimeout = 180000, connectTimeout = 10000, commandTimeout = 10000, sendCommandTimeout=300, cachedPowerTimeout=60000) {
 		console.log("Instantiating telnetM with:\nIP:"+ip+"\nUSER:"+user+"\nPASS: "+pass);
+		/*
+		* INITIALIZE STATE/INSTANCE VARIABLES
+		*/
+
 		//State stuff
 		this.isAuthenticated = false;
 
@@ -43,10 +47,16 @@ class telnetM {
 		}
 		this.connectTimeout = connectTimeout;
 		this.commandTimeout = commandTimeout;
+		this.sendCommandTimeout = sendCommandTimeout;
 		this.telnetClient = new net.Socket(); //Instantiate telnet server
 
-		this.commandQueue = new deviceCommandQueue("LutronQueue", false, debugMode);
+		this.commandQueue = new deviceCommandQueue("LutronQueue", this.commandTimeout, false, debugMode);
 
+		/*
+		* INITIALIZE COMMAND SENDING INTERVAL
+		*/
+
+		//Setup send interval (to send topmost command command when available)
 		setInterval(() => {
 			if (debugMode && this.commandQueue.queue.length > 0) {
 				this.commandQueue.queueDump();
@@ -58,13 +68,30 @@ class telnetM {
 
 				this.telnetClient.write(rawCommand+EOL);
 			}
-		},2000);
+		},this.sendCommandTimeout);
+
+		/*
+		* INITIALIZE DEVICE POWER CACHING
+		*/
+
+		this.cachedPowerTimeout = cachedPowerTimeout;
+		this.cachedDevicePowers = {};
+
+		var rdKeys = Object.keys(this.devices);
+		for (let i=0; i<rdKeys.length; i++) {
+			var dObj = this.devices[rdKeys[i]];
+			this.cachedDevicePowers[dObj.identifier] = { //store in cached array
+				"power": -1,
+				"age": 0
+			};
+		}
+
 	}
 
 	begin() {
 		return new Promise((resolve, reject) => {
 			//Setup timeout in case server fails to connect
-			var connectTimeout,loginTimeout;
+			var connectTimeout, loginTimeout;
 			this.connectionStatus.connected = false;
 			this.connectionStatus.login = false;
 			connectTimeout = setTimeout(() => {
@@ -77,7 +104,7 @@ class telnetM {
 			//Setup Handlers
 			this.telnetClient.on("data", data => {
 				if (!this.isAuthenticated) { //checks for authenticated handler
-					telnetLog("got data before auth; sending auth request");
+					telnetLog("got data before auth '"+data+"'; sending auth request if applicable");
 					if (data.indexOf("login:") > -1) { //write the pass or user when prompted
 						this.telnetClient.write(this.login.user+EOL);
 					} else if (data.indexOf("password:") > -1) {
@@ -122,10 +149,26 @@ class telnetM {
 		})
 	}
 
+	getDevices() {
+		return this.devices;
+	}
+
 	recv(data) {
 		// console.log("Recieved data: "+data);
-		if (data.toString().indexOf("GNET>" == -1)) { //only push data with useful info
-			this.commandQueue.checkForCompletions(data.toString());
+		let parsed = [];
+		let split = data.toString().split("\n");
+
+		for (let i=0; i<split.length; i++) {
+			split[i] = split[i].trim().replace(/(\r\n|\n|\r)/gm,""); //trim and remove all extra line break characters
+			if (split[i] != "" && split[i].indexOf("GNET>") < 0) { //only push data with useful info (no login)
+				if (split[i].indexOf("ERROR") > -1) {
+					telnetLog("RecvCommERR-Removing top elem because it's done");
+					this.commandQueue.getTopElemWithCommand().incomplete(); //remove top elem if it's errored
+				} else {
+					telnetLog("RecvCommOK-Checking for completions: "+split[i]);
+					this.commandQueue.checkForCompletions(split[i]);
+				}
+			}
 		}
 	}
 
@@ -137,7 +180,8 @@ class telnetM {
 			if (!this.connectionStatus.login) {
 				return reject("Err: not logged in to lights telnet shell");
 			}
-			let sendCommand = command+","+device+","+action; //selectively send based on whether there's a parameter
+			let baseCommand = command+","+device+","+action; //selectively send based on whether there's a parameter
+			let sendCommand = JSON.parse(JSON.stringify(baseCommand)); //hacky json trick to make sure they don't share same memory location
 			switch (typeof parameters) { //put in switch to determine what to do with parameters
 				case "object":
 					for (let i=0; i<parameters.length; i++) {
@@ -152,7 +196,7 @@ class telnetM {
 					break;
 			}
 			telnetLog("Adding command to queue: "+sendCommand);
-			let resp = "~"+sendCommand.substring(1);
+			let resp = "~"+baseCommand.substring(1); //make sure resp is only basecommand
 			this.commandQueue.addItem(sendCommand, resp, this.commandTimeout).then(resp => {
 				telnetLog("LutronQueue returned OK: "+resp);
 				return resolve(resp);
@@ -167,6 +211,8 @@ class telnetM {
 		value = clampPower(value);
 		return new Promise((resolve, reject) => {
 			this.sendCommand("#OUTPUT",device,1,[value,rampTime]).then(response => {
+				//Update cache with new value
+				this.setCachedDevicePower(device, value);
 				return resolve();
 			}).catch( e => {
 				return reject(e);
@@ -174,18 +220,57 @@ class telnetM {
 		});
 	}
 
+	getCachedDevicePower(device = 1) {
+		return new Promise((resolve, reject) => {
+			let cachedDevice = this.cachedDevicePowers[device];
+			if (typeof cachedDevice == "undefined") {
+				this.cachedDevicePowers[device] = {"power": -1, "age": 0};
+				telnetLog("device get cache hit for dev id="+device+" undefined, creating one");
+				return reject("device cache undefined; creating one");
+			} else {
+				if (Date.now()-cachedDevice.age > this.cachedPowerTimeout) {
+					telnetLog("device get cache hit for dev id="+device+" undefined, replacing with newer value");
+					return reject("device cache is outdated; replace with newer value");
+				} else {
+					return resolve(cachedDevice.power); //Cache is valid, return the cached power
+				}
+			}
+		});
+	}
+
+	setCachedDevicePower(device, power) {
+		//If it doesn't exist, set it to default value
+		if (typeof this.cachedDevicePowers[device] == "undefined") {
+			this.cachedDevicePowers[device] = {power: -1, age: Date.now()};
+			telnetLog("device set cache hit for dev id="+device+" undefined, creating one");
+		}
+
+		let cachedDevice = this.cachedDevicePowers[device];
+		cachedDevice.power = clampPower(power); //actually set the power
+		cachedDevice.age = Date.now(); //reset age
+
+		return;
+	}
+
 	getLightOutput(device = 1) {
 		return new Promise((resolve, reject) => {
-			this.sendCommand("?OUTPUT",device,1).then(response => {
-				for (let i=0; i<response.length; i++) {
-					if (response[i].indexOf("~OUTPUT,"+device) > -1) {
-						return resolve(response[i].toString().split(",")[3]);
+			//First try to get the cached power from device power cache (faster, saves long requests)
+			this.getCachedDevicePower(device).then(power => {
+				telnetLog("Got cached value for dev id="+device+", power="+power);
+				return resolve(power);
+			}).catch(e => { //Hmm for some reason the cache get failed (was the cached value outdated? Then get a new one)
+				this.sendCommand("?OUTPUT",device,1).then(response => {
+					if (response.indexOf("~OUTPUT,"+device) > -1) {
+						let power = response.toString().split(",")[3];
+						//Once we get the power make sure to update the cache
+						this.setCachedDevicePower(device, power);
+						return resolve(power);
 					}
-				}
-				return reject("OutputCMDResponse did not contain light we were looking for");
-			}).catch(e => {
-				return reject(e);
-			})
+					return reject("OutputCMDResponse did not contain light we were looking for");
+				}).catch(e => {
+					return reject(e);
+				});
+			});
 		})
 	}
 
@@ -202,16 +287,12 @@ class telnetM {
 		})
 	}
 
-	lookupDeviceName(name = "", newPower = 100) { //set power on lookup
+	lookupDeviceName(name = "") { //set power on lookup
 		name = name.toLowerCase();
-		newPower = clampPower(newPower);
 		return new Promise((resolve, reject) => {
 			let devicesIndices = Object.keys(this.devices);
 			for (let i=0; i<devicesIndices.length; i++) {
 				if (devicesIndices[i].toLowerCase() == name) { //indices are names
-					if (typeof newPower != "undefined") {
-						this.devices[devicesIndices[i]].power = newPower;
-					}
 					return resolve(this.devices[devicesIndices[i]]);
 				}
 			}
@@ -241,7 +322,7 @@ class telnetM {
 		return new Promise((resolve, reject) => {
 			this.lookupLocation(name).then(locationObject => {
 				var setLight = index => {
-					this.lookupDeviceName(locationObject.devices[index], value).then(device => {
+					this.lookupDeviceName(locationObject.devices[index]).then(device => {
 						// console.log("dN: "+device.identifier);
 						this.getLightOutput(device.identifier).then(currentValue => {
 							let ramp = (value >= currentValue) ? device.rampUpTime : device.rampDownTime;

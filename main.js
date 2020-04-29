@@ -62,8 +62,6 @@ const hub = new telnetHandler(settings.baseHubIP, settings.baseHubUser, settings
 var hubConnected = false;
 hub.begin().then(() => {
 	hubConnected = true;
-	console.log("Running initial UDI scan");
-	setTimeout(updateAllDevicePowers,60000); //perform initial devicePower update
 	console.log("Hub connected");
 	/**** EXAMPLE USAGE
 
@@ -96,26 +94,6 @@ hub.begin().then(() => {
 	process.exit(1);
 });
 
-let UDIDebug = false;
-function updateAllDevicePowers() {
-	var rdKeys = Object.keys(roomData.devices);
-	var updateDeviceIndex = index => {
-		if (UDIDebug) {console.log("UDI call "+index)};
-		hub.getLightOutput(roomData.devices[rdKeys[index]].identifier).then(value => {
-			roomData.devices[rdKeys[index]].power = Number(value);
- 			if (index < rdKeys.length-1) {
- 				updateDeviceIndex(index+1);
- 			} else {
- 				if (UDIDebug) {console.log("UDI scan finished")};
- 			}
-		}).catch(e => {
-			console.error("Light output value fail: "+e);
-		});
-	};
-	updateDeviceIndex(0); //start updating
-}
-//setInterval(updateAllDevicePowers,5000); //will ensure that device powers are accurate if manually changed
-
 //Timer setup for autodimming of lights, etc
 const timing = new timingHandler(roomData.timeShift, hub); //pass in hub reference to allow control
 
@@ -143,10 +121,15 @@ app.get('/status', (req, res) => {
 });
 
 console.log("Connecting routers to pages");
+
+/*
+* POST requests - write to devices
+*/
+
 app.post("/deviceName/:device/:newValue", function(req, res) {
 	let deviceName = req.params.device;
 	let newValue = req.params.newValue;
-	hub.lookupDeviceName(deviceName, newValue).then(deviceObject => {
+	hub.lookupDeviceName(deviceName).then(deviceObject => {
 		hub.getLightOutput(deviceObject.identifier).then(currentValue => {
 			let ramp = (newValue >= currentValue) ? deviceObject.rampUpTime : deviceObject.rampDownTime;
 			hub.setLightOutput(deviceObject.identifier, newValue, ramp).then(() => {
@@ -164,7 +147,7 @@ app.post("/deviceName/:device/:newValue", function(req, res) {
 app.post("/device/:device/:newValue", function(req, res) {
 	let device = req.params.device;
 	let newValue = req.params.newValue;
-	hub.lookupDeviceIdentifier(device, newValue).then(deviceObject => {
+	hub.lookupDeviceIdentifier(device).then(deviceObject => {
 		hub.getLightOutput(deviceObject.identifier).then(currentValue => {
 			let ramp = (newValue >= currentValue) ? deviceObject.rampUpTime : deviceObject.rampDownTime;
 			hub.setLightOutput(deviceObject.identifier, newValue, ramp).then(() => {
@@ -179,7 +162,7 @@ app.post("/device/:device/:newValue", function(req, res) {
 		return res.end(RequestHandler.FAILURE("Device lookup failed: "+e+"\n"));
 	});
 });
-app.post("/location/:location/:newValue", function(req, res) {
+app.post("/locationName/:location/:newValue", function(req, res) {
 	let locName = req.params.location;
 	let newValue = req.params.newValue;
 	hub.setLocationLight(locName,newValue).then(() => {
@@ -187,28 +170,46 @@ app.post("/location/:location/:newValue", function(req, res) {
 	}).catch(e => {
 		return res.end(RequestHandler.FAILURE("Error setting room value: "+e+"\n"));
 	})
-})
-app.post("/deviceValue/:device/", function(req, res) {
+});
+
+/*
+* GET requests - get device information
+*/
+
+app.get("/deviceName/:deviceName/", function(req, res) {
+	let deviceName = req.params.deviceName;
+	hub.lookupDeviceName(deviceName).then(deviceObject => {
+		hub.getLightOutput(deviceObject.identifier).then(currentValue => {
+			return res.end(RequestHandler.SUCCESS(currentValue));
+		}).catch(e => {
+			return res.end(RequestHandler.FAILURE("Error getting light output value: "+e+"\n"));
+		});
+	}).catch(e => {
+		return res.end(RequestHandler.FAILURE("Error getting light output value: "+e+"\n"));
+	})
+});
+app.get("/device/:device/", function(req, res) {
 	let device = req.params.device;
 	hub.getLightOutput(device).then(currentValue => {
 		return res.end(RequestHandler.SUCCESS(currentValue));
 	}).catch(e => {
 		return res.end(RequestHandler.FAILURE("Error getting light output value: "+e+"\n"));
 	})
-})
-app.post("/locationValue/:location/", function(req, res) {
+});
+app.get("/locationName/:location/", function(req, res) {
 	let location = req.params.location;
 	hub.getLocationLight(location).then(currentValue => {
 		return res.end(RequestHandler.SUCCESS(currentValue));
 	}).catch(e => {
 		return res.end(RequestHandler.FAILURE("Error getting location output value: "+e+"\n"));
 	})
-})
+});
 
-app.use(function(req, res, next){ //404 page
+app.use(function(req, res, next){ //anything else that doesn't match those filters
 	res.render('index', {
 		locations: roomData.locations,
 		devices: roomData.devices,
+		devicePowers: hub.cachedDevicePowers,
 		status: hubConnected ? "OK" : "Error"
 	});
 });

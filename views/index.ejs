@@ -173,6 +173,22 @@
 			margin-left: 20px;
 		}
 
+		.POnButton.disabled {
+			background: #268a16 !important;
+		}
+
+		.POffButton.disabled {
+			background: #d83526 !important;
+		}
+
+		.PUpButton.disabled {
+			background: #337fed !important;
+		}
+
+		.PDownButton.disabled {
+			background: #f2ab1e !important;
+		}
+
 	</style>
 
 	<body class="container">
@@ -185,12 +201,12 @@
 			<% var locationKeys = Object.keys(locations) %>
 			<% for (let i=0; i<locationKeys.length; i++) {%>
 			  	<h4 class="leftPad" id="LOC<%=locationKeys[i]%>"><%= locationKeys[i] %>: </h4>
-			  	<a class="PUpButton" onclick="deltaLocationValue('<%=locationKeys[i]%>',25);">Up 25%</a>
-			  	<a class="PDownButton leftPad" onclick="deltaLocationValue('<%=locationKeys[i]%>',-25);">Down 25%</a>
+			  	<button class="PUpButton" onclick="domDisableOnPromise(this, deltaLocationValue('<%=locationKeys[i]%>', 25));">Up 25%</button>
+			  	<button class="PDownButton leftPad" onclick="domDisableOnPromise(this, deltaLocationValue('<%=locationKeys[i]%>',-25));">Down 25%</button>
 			  	<br>
 			  	<br>
-			  	<a class="POnButton" onclick="sendLocationCommand('<%=locationKeys[i]%>',100);">On</a>
-			  	<a class="POffButton leftPad" onclick="sendLocationCommand('<%=locationKeys[i]%>',0);">Off</a>
+			  	<button class="POnButton" onclick="domDisableOnPromise(this, sendLocationCommand('<%=locationKeys[i]%>', 100));">On</button>
+			  	<button class="POffButton leftPad" onclick="domDisableOnPromise(this, sendLocationCommand('<%=locationKeys[i]%>',0));">Off</button>
 			<% } %>
 			<% } %>
 			<br>
@@ -198,39 +214,93 @@
 			<% if (devices) { %>
 			<% var deviceKeys = Object.keys(devices) %>
 			<% for (let i=0; i<deviceKeys.length; i++) {%>
-			  	<h4 class="leftPad"><%= deviceKeys[i] %>: <%=devices[Object.keys(devices)[i]].power%>%</h4>
-			  	<a class="PUpButton" onclick="deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>,25);">Up 25%</a>
-			  	<a class="PDownButton leftPad" onclick="deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>,-25);">Down 25%</a>
+			  	<h4 class="leftPad" id="RM<%=deviceKeys[i]%>"><%= deviceKeys[i] %>: <%=devicePowers[devices[Object.keys(devices)[i]].identifier].power%>%</h4>
+			  	<button class="PUpButton" onclick="domDisableOnPromise(this, deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>, 25));">Up 25%</button>
+			  	<button class="PDownButton leftPad" onclick="domDisableOnPromise(this, deltaDeviceValue(<%=devices[deviceKeys[i]].identifier%>, -25));">Down 25%</button>
 			  	<br>
 			  	<br>
-			  	<a class="POnButton" onclick="sendDeviceCommand(<%=devices[deviceKeys[i]].identifier%>,100);">On</a>
-			  	<a class="POffButton leftPad" onclick="sendDeviceCommand(<%=devices[deviceKeys[i]].identifier%>,0);">Off</a>
+			  	<button class="POnButton" onclick="domDisableOnPromise(this, sendDeviceCommand(<%=devices[deviceKeys[i]].identifier%>, 100));">On</button>
+			  	<button class="POffButton leftPad" onclick="domDisableOnPromise(this, sendDeviceCommand(<%=devices[deviceKeys[i]].identifier%>, 0));">Off</button>
 			<% } %>
 			<% } %>
     	</div>
-    	<p class="text-center text-muted">© Copyright 2019 Aaron Becker</p>
+    	<p class="text-center text-muted">© Copyright 2020 Aaron Becker</p>
 		<script>
-			//Jank workaround for location auto percentage updating
-			var hElems = document.getElementsByTagName("h4");
-			var updateIndex = index => {
-				if (hElems[index].id.indexOf("LOC") > -1) {
-					getLocationValue(hElems[index].id.replace("LOC","")).then(value => {
-						hElems[index].innerHTML+=value+"%";
-						if (index < hElems.length-1) {
-							updateIndex(index+1);
-						} else {
-							console.log("Index updating done");
-						}
-					})
+			const debugMode = true;
+			const debugLog = fn => {
+				if (debugMode) {
+					console.log(fn);
 				}
 			}
-			updateIndex(0); //start updating
 
+			//Workarounds for location auto percentage updating
+			var hElems;
+			var updateIndexLocations = index => {
+				hElems = document.getElementsByTagName("h4");
+				if (hElems[index].id.indexOf("LOC") > -1) {
+					getLocationValue(hElems[index].id.replace("LOC","")).then(value => {
+						let ih = hElems[index].innerHTML;
+						hElems[index].innerHTML = ih.split(":")[0]+": "+value+"%";
+					});
+				}
+
+				if (index < hElems.length-1) {
+					updateIndexLocations(index+1);
+				} else {
+					debugLog("Index updating done for locations");
+				}
+			}
+			updateIndexLocations(0); //start updating
+
+			var updateIndexRooms = index => {
+				hElems = document.getElementsByTagName("h4");
+				//console.log(hElems[index].id)
+				if (hElems[index].id.indexOf("RM") > -1) {
+					getDeviceNameValue(hElems[index].id.replace("RM","")).then(value => {
+						let ih = hElems[index].innerHTML;
+						hElems[index].innerHTML = ih.split(":")[0]+": "+value+"%";
+					})
+				}
+
+				if (index < hElems.length-1) {
+					updateIndexRooms(index+1);
+				} else {
+					debugLog("Index updating done for rooms");
+				}
+			}
+			updateIndexRooms(0); //start updating
+
+
+			//Helper function to make buttons grey out while we're waiting for a response
+			function domDisableOnPromise(elem, promise) {
+				if (elem.getAttribute("disabled") != null) {
+					debugLog("click registered on disabled button");
+					return false;
+				}
+				let originalClassName = JSON.parse(JSON.stringify(elem.className)); //use json hack to prevent memory from being copied
+				elem.setAttribute("disabled","");
+				elem.className+=" disabled";
+
+				promise.then(() => {
+					elem.removeAttribute("disabled","");
+					elem.className = originalClassName;
+					//Update both location powers and room powers
+					updateIndexLocations(0);
+					updateIndexRooms(0);
+				}).catch(() => {
+					elem.removeAttribute("disabled","");
+					elem.className = originalClassName;
+				});
+			}
+
+			/*
+			* GENERAL DEVICE ACCESSOR FUNCTIONS
+			*/
 
 			function getDeviceValue(device) {
 				return new Promise((resolve, reject) => {
-					let response = fetch("http://"+document.location.host+"/deviceValue/"+device, {
-						method: 'post'
+					let response = fetch("http://"+document.location.host+"/device/"+device, {
+						method: 'get'
 				    }).then(res => res.json()).then(res => {
 				    	return resolve(res.message);
 				    }).catch(e => {
@@ -238,62 +308,98 @@
 				    });
 				})
 			}
-			function getLocationValue(device) {
+			function getDeviceNameValue(deviceName) {
 				return new Promise((resolve, reject) => {
-					let response = fetch("http://"+document.location.host+"/locationValue/"+device, {
-						method: 'post'
+					let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName, {
+						method: 'get'
 				    }).then(res => res.json()).then(res => {
 				    	return resolve(res.message);
 				    }).catch(e => {
 				    	return reject(e);
 				    });
 				})
+			}
+			function getLocationValue(location) {
+				return new Promise((resolve, reject) => {
+					let response = fetch("http://"+document.location.host+"/locationName/"+location, {
+						method: 'get'
+				    }).then(res => res.json()).then(res => {
+				    	return resolve(res.message);
+				    }).catch(e => {
+				    	return reject(e);
+				    });
+				});
 			}
 			function sendDeviceNameCommand(deviceName, value) { 
-		    	let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
-					method: 'post'
-			    }).then(res => res.json()).then(res => {
-			    	console.log(JSON.stringify(res));
-				// window.location.reload(); //Only reload after request succeeds so that server is not overwhelmed
-			    }).catch(e => {
-			    	console.error(JSON.stringify(e));
-			    });
+		    	return new Promise((resolve, reject) => {
+		    		let response = fetch("http://"+document.location.host+"/deviceName/"+deviceName+"/"+value, {
+						method: 'post'
+				    }).then(res => res.json()).then(res => {
+				    	debugLog(JSON.stringify(res));
+				    	return resolve(res);
+				    }).catch(e => {
+				    	console.error(JSON.stringify(e));
+				    	return reject(e);
+				    });
+				});
 			}
 			function sendDeviceCommand(device, value) {
-		    	let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
-					method: 'post'
-			    }).then(res => res.json()).then(res => {
-			    	console.log(JSON.stringify(res));
-				// window.location.reload(); //Only reload after request succeeds so that server is not overwhelmed
-			    }).catch(e => {
-			    	console.error(JSON.stringify(e));
-			    });
+		    	return new Promise((resolve, reject) => {
+		    		let response = fetch("http://"+document.location.host+"/device/"+device+"/"+value, {
+						method: 'post'
+				    }).then(res => res.json()).then(res => {
+				    	debugLog(JSON.stringify(res));
+				    	return resolve(res);
+				    }).catch(e => {
+				    	console.error(JSON.stringify(e));
+				    	return reject(e);
+				    });
+				});
 			}
 			function sendLocationCommand(loc, value) {
-		    	let response = fetch("http://"+document.location.host+"/location/"+loc+"/"+value, {
-					method: 'post'
-			    }).then(res => res.json()).then(res => {
-			    	console.log(JSON.stringify(res));
-				// window.location.reload(); //Only reload after request succeeds so that server is not overwhelmed
-			    }).catch(e => {
-			    	console.error(JSON.stringify(e));
-			    });
+		    	return new Promise((resolve, reject) => {
+		    		let response = fetch("http://"+document.location.host+"/locationName/"+loc+"/"+value, {
+						method: 'post'
+				    }).then(res => res.json()).then(res => {
+				    	debugLog(JSON.stringify(res));
+				    	return resolve(res);
+				    }).catch(e => {
+				    	console.error(JSON.stringify(e));
+				    	return reject(e);
+				    });
+				});
 			}
 
 			function deltaDeviceValue(device, delta) {
-				getDeviceValue(device).then(value => {
-					sendDeviceCommand(device, Number(value)+delta);
-				}).catch(e => {
-					console.error(e);
-				})
+				return new Promise((resolve, reject) => {
+					getDeviceValue(device).then(value => {
+						sendDeviceCommand(device, Number(value)+delta).then(res => {
+							debugLog(JSON.stringify(res));
+							return resolve(res);
+						}).catch(e => {
+							console.error(e);
+							return reject(e);
+						});
+					}).catch(e => {
+						console.error(e);
+					});
+				});
 			}
 
 			function deltaLocationValue(name, delta) {
-				getLocationValue(name).then(value => {
-					sendLocationCommand(name, Number(value)+delta);
-				}).catch(e => {
-					console.error(e);
-				})
+				return new Promise((resolve, reject) => {
+					getLocationValue(name).then(value => {
+						sendLocationCommand(name, Number(value)+delta).then(res => {
+							debugLog(JSON.stringify(res));
+							return resolve(res);
+						}).catch(e => {
+							console.error(e);
+							return reject(e);
+						});
+					}).catch(e => {
+						console.error(e);
+					});
+				});
 			}
 		</script>
 	</body>
