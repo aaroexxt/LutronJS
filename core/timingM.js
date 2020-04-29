@@ -1,6 +1,6 @@
 const http = require('http');
 
-const debugMode = true;
+const debugMode = false;
 const timingLog = log => {
 	if (debugMode) {
 		console.log("Timer: "+log);
@@ -31,7 +31,7 @@ class timingM {
 
 			res.on("data", function(chunk) {
 				self.ipAddr = chunk;
-				timingLog("Ip Addr get OK");
+				timingLog("Ip Addr get OK: '"+chunk+"'");
 				self.checkEvents(); //check for outstanding events
 			});
 		}).on('error', function(e) {
@@ -86,7 +86,6 @@ class timingM {
 
 		this.getCurrentTime().then(time => {
 			//Process: once we have time, check which events could potentially be relevant and issue the appropriate request
-			timingLog("TimeEvent precheck at "+JSON.stringify(time));
 			for (let i=0; i<this.tsArr.length; i++) {
 				if (this.trgTimes[i][0] == time.hours && this.trgTimes[i][1] == time.minutes) { //event match
 					timingLog("TimeEvent postcheck at "+JSON.stringify(time));
@@ -148,8 +147,8 @@ class timingM {
 				res.on("data", function(chunk) {
 					try {
 						var data = JSON.parse(chunk.toString());
-						var d = new Date(Date.parse(data.utc_datetime)+(data.raw_offset*1000));
-						return resolve ({hours: d.getHours(), minutes: d.getMinutes()});
+						var d = new Date(Date.parse(data.datetime));//+(data.raw_offset*1000));
+						return resolve({hours: d.getHours(), minutes: d.getMinutes()});
 					} catch(e) {
 						return reject("JSON parsing error");
 					}

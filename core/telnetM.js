@@ -2,7 +2,7 @@ const net = require('net');
 const deviceCommandQueue = require('./deviceCommandQueue.js');
 const EOL = "\r\n"; //end of line to server
 
-const debugMode = true;
+const debugMode = false;
 const telnetLog = log => {
 	if (debugMode) {
 		console.log("TelnetClient: "+log);
